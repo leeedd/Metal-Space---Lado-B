@@ -11,7 +11,8 @@ public final class SomJogo {
   IMPACTO(.3f,1,55),DANO(.65f,4,150),EXPLOSAO(.5f,2,70),EXPLOSAO_GRANDE(.75f,5,250),DERROTA(.75f,5,500),FUSAO(.65f,5,300),
   COLETA(.6f,3,80),ENERGIA(.55f,3,80),REPARO(.6f,3,100),SUBTANQUE(.65f,4,150),RELIQUIA(.7f,5,300),EVOLUCAO(.65f,4,150),ESCUDO(.5f,3,100),ESCUDO_QUEBRA(.6f,4,150),
   TROCA(.45f,2,80),MENU(.3f,1,65),CONFIRMAR(.45f,2,100),VOLTAR(.4f,2,100),ERRO(.35f,2,200),PAUSA(.4f,3,100),RETOMAR(.4f,3,100),COMPRA(.6f,4,150),
-  ALERTA(.4f,4,2000),CHEFE_ENTRADA(.7f,5,1000),DOBRA(.6f,4,500),SAIDA_DOBRA(.6f,4,500),INTERDICAO(.7f,5,500),TROVAO(.7f,5,100),VITORIA(.7f,5,500);
+  ALERTA(.4f,4,2000),CHEFE_ENTRADA(.7f,5,1000),DOBRA(.6f,4,500),SAIDA_DOBRA(.6f,4,500),INTERDICAO(.7f,5,500),TROVAO(.7f,5,100),VITORIA(.7f,5,500),
+  BATERIA_FRACA(.4f,2,80),BATERIA_MEDIA(.6f,3,80),BATERIA_FORTE(.9f,4,150);
   final float volume;final int prioridade,intervalo;final String arquivo;
   Efeito(float v,int p,int i){volume=v;prioridade=p;intervalo=i;arquivo=name().toLowerCase(Locale.ROOT);}
   boolean ui(){return this==MENU||this==CONFIRMAR||this==VOLTAR||this==ERRO||this==PAUSA||this==RETOMAR||this==COMPRA;}

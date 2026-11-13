@@ -19,7 +19,11 @@ public final class TiroChefe {
     TiroChefe comCor(Color c) { if (c != null) cor = c; return this; }
     private int variante; private double duracao; private int resistencia = 2;
     static double alvoX = 150, alvoY = 300; // a nave, para o enxame de mortos perseguir
-    boolean abativel() { return estilo == MORTO; }
+    boolean abativel() { return estilo == MORTO || estilo >= DIABRETE && estilo <= CUSPIDOR; }
+    /** Demonios do inferno: quantos tiros aguentam. */
+    TiroChefe demonio() { resistencia = estilo == DIABRETE ? 1 : estilo == CAO ? 2 : estilo == GARGULA ? 3 : estilo == CUSPIDOR ? 7 : resistencia; return this; }
+    boolean cuspidorParado() { return estilo == CUSPIDOR && vx == 0 && visivel; }
+    private boolean pulou;
     /** Leva um tiro; devolve true quando o morto desmonta. */
     boolean acertar() { return --resistencia <= 0; }
     TiroChefe comDuracao(double d) { duracao = d; return this; }
@@ -46,6 +50,16 @@ public final class TiroChefe {
         if (estilo == MORTO && tempo < 6) { // enxame: cada morto cambaleia na direcao da nave, com um desvio proprio para nao virar fila
             double ang = variante * 2.399, ax = alvoX + Math.cos(ang) * 46, ay = alvoY + Math.sin(ang) * 46 + Math.sin(tempo * 3 + variante) * 30, dx = ax - x, dy = ay - y, d = Math.max(1, Math.hypot(dx, dy)), vel = 105 + variante % 5 * 12;
             vx += (dx / d * vel - vx) * Math.min(1, dt * 1.6); vy += (dy / d * vel - vy) * Math.min(1, dt * 1.6); }
+        if (estilo == DIABRETE) { // bando: voa em zigue-zague atras da nave
+            double dx = alvoX - x, dy = alvoY + Math.sin(tempo * 5 + variante) * 50 - y, d = Math.max(1, Math.hypot(dx, dy)), vel = 190 + variante % 4 * 15;
+            vx += (dx / d * vel - vx) * Math.min(1, dt * 2.2); vy += (dy / d * vel - vy) * Math.min(1, dt * 2.2); }
+        else if (estilo == CAO) { // corre pela margem da lava e salta em cima da nave
+            if (!pulou && x < alvoX + 240) { pulou = true; double dt2 = Math.max(.35, (x - alvoX) / 420); vx = -420; vy = (alvoY - y) / dt2 - 280 * dt2; }
+            if (pulou) vy += 560 * dt; else y = LAVA_Y - 26 + Math.abs(Math.sin(tempo * 12)) * -6; }
+        else if (estilo == GARGULA) { // paira e depois mergulha em linha reta na nave
+            if (tempo < .7) { vx = 0; vy = 30; } else if (!pulou) { pulou = true; double dx = alvoX - x, dy = alvoY - y, d = Math.max(1, Math.hypot(dx, dy)); vx = dx / d * 560; vy = dy / d * 560; } }
+        else if (estilo == CUSPIDOR) { // entra devagar, para, flutua cuspindo fogo (o chefe cria as bolas) e vai embora
+            if (tempo < 9 && x < Config.LARGURA - 190 && !pulou) { pulou = true; vx = 0; } if (tempo >= 9) vx = -110; vy = Math.sin(tempo * 2) * 30; }
         if (movimento == Movimento.ARCO) queda += 560 * dt;
         x += vx * dt * velocidade + perpx * curva;
         y += (vy + queda) * dt * velocidade + perpy * curva;
@@ -53,7 +67,7 @@ public final class TiroChefe {
         if (estilo == RASTRO && tempo > 1.4) visivel = false;
         if (duracao > 0 && tempo > duracao) visivel = false;
         if (estilo == PISTA_FOGO && tempo > PISTA_DURA) visivel = false;
-        int margem = estilo == VAGAO ? 130 : estilo >= SOLDADO && estilo <= RAINHA ? 1200 : estilo == TINTA ? 160 : estilo == MORTO || estilo == LOBISOMEM ? 220 : estilo == OSSO_PE ? 90 : 40;
+        int margem = estilo == VAGAO ? 130 : estilo >= SOLDADO && estilo <= RAINHA ? 1200 : estilo == TINTA ? 160 : estilo == MORTO || estilo == LOBISOMEM || estilo >= DIABRETE && estilo <= CUSPIDOR ? 220 : estilo == OSSO_PE ? 90 : 40;
         if (estilo == PEGADA && tempo > 1.1) visivel = false;
         if (x < -margem || x > Config.LARGURA + margem || y < Config.HUD - margem || y > Config.ALTURA + margem)
             visivel = false;
@@ -76,6 +90,7 @@ public final class TiroChefe {
             case BOLA_FOGO: desenharBolaFogo(g, px, py); return;
             case ATADURA: desenharAtadura(g, px, py); return;
             case TINTA: desenharTinta(g, px, py); return;
+            case DIABRETE: case CAO: case GARGULA: case CUSPIDOR: desenharDemonio(g, px, py); return;
             case MORTO: { java.awt.image.BufferedImage[] m = mortos(); if (m.length > 0 && quadros(g, m[Math.floorMod(variante, m.length)], 4, (int) (tempo * 7 + variante) % 4, 88, px, py + (int) (Math.abs(Math.sin(tempo * 7)) * -6), false)) return; break; } // dança macabra: os mortos avancam dancando
             case OSSO_PE: if (ARTE_PE != null) { boolean roxo = cor.getBlue() > cor.getGreen(); java.awt.image.BufferedImage f = roxo ? peRoxo() : ARTE_PE.getSubimage(0, 0, ARTE_PE.getWidth() / 4, ARTE_PE.getHeight());
                 Graphics2D e = (Graphics2D) g.create(); e.translate(px, py); e.rotate(Math.atan2(vy, vx) + Math.PI / 2); int h = 70, w = h * f.getWidth() / f.getHeight(); e.drawImage(f, -w / 2, -h / 2, w, h, null); e.dispose(); return; } break;
@@ -307,6 +322,10 @@ public final class TiroChefe {
         if (estilo == OSSO_PE) return new Rectangle((int) x - 22, (int) y - 22, 44, 44);
         if (estilo == OSSO_SOCO) return new Rectangle((int) x - 20, (int) y - 18, 40, 36);
         if (estilo == MORTO) return new Rectangle((int) x - 20, (int) y - 30, 40, 64);
+        if (estilo == DIABRETE) return new Rectangle((int) x - 18, (int) y - 16, 36, 32);
+        if (estilo == CAO) return new Rectangle((int) x - 34, (int) y - 20, 68, 40);
+        if (estilo == GARGULA) return new Rectangle((int) x - 30, (int) y - 28, 60, 56);
+        if (estilo == CUSPIDOR) return new Rectangle((int) x - 46, (int) y - 46, 92, 92);
         if (estilo == LOBISOMEM) return new Rectangle((int) x - 40, (int) y - 25, 80, 50);
         if (estilo == TINTA) return new Rectangle(-99, -99, 0, 0); // a nuvem de tinta nao machuca: so esconde os tiros
         if (estilo == ATADURA) return new Rectangle((int) x - 14, (int) y - 8, 28, 16);
@@ -436,7 +455,8 @@ public final class TiroChefe {
     }
     /** Pneu em chamas deixa fogo na pista: some sozinho em 1,4 s. */
     /** Pista em chamas da moto do Valdrak: sobe rapido, fica queimando e baixa no fim. */
-    static final int PISTA_FOGO = 35, BOLA_FOGO = 36, ATADURA = 37, BLOCO = 38, SOLDADO = 39, CARRUAGEM = 40, ESFINGE = 41, RAINHA = 42, TINTA = 43, ESTRELA_ECLIPSE = 44, TORTA = 45, CORNETA = 46, CONFETE = 47, MORTO = 48, LOBISOMEM = 49, OSSO_PE = 50, OSSO_SOCO = 51, OSSO_NOTA = 52, PEGADA = 53; private static final double PISTA_DURA = 2.6;
+    static final int PISTA_FOGO = 35, BOLA_FOGO = 36, ATADURA = 37, BLOCO = 38, SOLDADO = 39, CARRUAGEM = 40, ESFINGE = 41, RAINHA = 42, TINTA = 43, ESTRELA_ECLIPSE = 44, TORTA = 45, CORNETA = 46, CONFETE = 47, MORTO = 48, LOBISOMEM = 49, OSSO_PE = 50, OSSO_SOCO = 51, OSSO_NOTA = 52, PEGADA = 53, DIABRETE = 54, CAO = 55, GARGULA = 56, CUSPIDOR = 57;
+    static final int LAVA_Y = Config.ALTURA - 78; private static final double PISTA_DURA = 2.6; // LAVA_Y: superficie do rio de lava do inferno
     private double fogoPista() { return Math.max(0, Math.min(1, Math.min(tempo / .15, (PISTA_DURA - tempo) / .6))); }
     private void desenharPistaFogo(Graphics2D tela, int px, int py) {
         Graphics2D g = (Graphics2D) tela.create(); double f = fogoPista();
@@ -489,6 +509,27 @@ public final class TiroChefe {
         if (peRoxoCache == null) { java.awt.image.BufferedImage f = ARTE_PE.getSubimage(0, 0, ARTE_PE.getWidth() / 4, ARTE_PE.getHeight()); peRoxoCache = new java.awt.image.BufferedImage(f.getWidth(), f.getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
             for (int yy = 0; yy < f.getHeight(); yy++) for (int xx = 0; xx < f.getWidth(); xx++) { int c = f.getRGB(xx, yy), al = c >>> 24, r = (c >> 16) & 255, gg = (c >> 8) & 255, b = c & 255; peRoxoCache.setRGB(xx, yy, (al << 24) | (Math.min(255, gg * 8 / 10 + r / 3) << 16) | (Math.min(255, r / 2 + b / 3) << 8) | Math.min(255, gg + b / 2)); } }
         return peRoxoCache;
+    }
+    private static final java.awt.image.BufferedImage ARTE_DIABRETE = ler("demonio_diabrete.png"), ARTE_CAO = ler("demonio_cao.png"), ARTE_GARGULA = ler("demonio_gargula.png"), ARTE_CUSPIDOR = ler("demonio_cuspidor.png");
+    /** Demonios do inferno: com a arte (4 quadros virados para a esquerda) ou um desenho simples ate ela chegar. */
+    private void desenharDemonio(Graphics2D g, int px, int py) {
+        java.awt.image.BufferedImage arte = estilo == DIABRETE ? ARTE_DIABRETE : estilo == CAO ? ARTE_CAO : estilo == GARGULA ? ARTE_GARGULA : ARTE_CUSPIDOR;
+        int tam = estilo == DIABRETE ? 52 : estilo == CAO ? 90 : estilo == GARGULA ? 84 : 120, q = (int) (tempo * 10 + variante) % 4;
+        if (arte != null && quadros(g, arte, 4, q, tam, px, py, false)) return;
+        Graphics2D a = (Graphics2D) g.create(); a.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_OFF); double bat = Math.sin(tempo * 22 + variante);
+        if (estilo == DIABRETE) { a.setColor(new Color(90, 10, 20)); int asa = (int) (bat * 9);
+            a.fillPolygon(new int[]{px - 4, px + 16, px + 22}, new int[]{py - 2, py - 16 - asa, py + 2}, 3); a.fillPolygon(new int[]{px + 2, px - 16, px - 20}, new int[]{py - 2, py - 16 + asa, py + 2}, 3);
+            a.setColor(new Color(220, 40, 30)); a.fillOval(px - 9, py - 9, 18, 20); a.setColor(new Color(255, 230, 80)); a.fillRect(px - 5, py - 4, 3, 3); a.fillRect(px + 1, py - 4, 3, 3);
+            a.setColor(new Color(60, 0, 0)); a.drawLine(px - 7, py - 8, px - 10, py - 15); a.drawLine(px + 5, py - 8, px + 8, py - 15); a.drawLine(px - 14, py + 8, px - 24, py + 4); }
+        else if (estilo == CAO) { int pata = (int) (Math.sin(tempo * 18) * 6); a.setColor(new Color(60, 10, 0)); a.fillRect(px - 26, py + 6, 7, 16 + pata); a.fillRect(px + 16, py + 6, 7, 16 - pata);
+            a.setColor(new Color(200, 60, 10)); a.fillRoundRect(px - 30, py - 12, 56, 26, 12, 12); a.fillOval(px - 44, py - 22, 28, 24); a.setColor(new Color(255, 200, 60)); a.fillRect(px - 36, py - 15, 4, 4);
+            a.setColor(new Color(255, 120, 20, 200)); a.fillPolygon(new int[]{px - 44, px - 60, px - 44}, new int[]{py - 10, py - 4 + pata, py}, 3); a.setColor(new Color(255, 220, 120)); a.drawLine(px - 10, py - 8, px + 6, py + 4); a.drawLine(px + 6, py - 10, px + 18, py); }
+        else if (estilo == GARGULA) { int asa = (int) (bat * 6); a.setColor(new Color(70, 70, 80)); a.fillPolygon(new int[]{px, px + 38, px + 30}, new int[]{py - 6, py - 30 - asa, py + 8}, 3); a.fillPolygon(new int[]{px, px - 34, px - 26}, new int[]{py - 6, py - 30 + asa, py + 8}, 3);
+            a.setColor(new Color(110, 110, 120)); a.fillRoundRect(px - 16, py - 20, 32, 42, 10, 10); a.setColor(new Color(50, 50, 60)); a.drawRoundRect(px - 16, py - 20, 32, 42, 10, 10); a.setColor(new Color(255, 40, 30)); a.fillRect(px - 9, py - 12, 5, 4); a.fillRect(px + 4, py - 12, 5, 4); }
+        else { int r = 44 + (int) (Math.sin(tempo * 6) * 3); a.setColor(new Color(120, 20, 0)); a.fillOval(px - r, py - r, r * 2, r * 2); a.setColor(new Color(230, 90, 10)); a.fillOval(px - r + 8, py - r + 8, r * 2 - 16, r * 2 - 22);
+            a.setColor(new Color(255, 220, 90)); for (int k = 0; k < 4; k++) a.drawLine(px - 30 + k * 18, py - 30 + (k % 2) * 12, px - 20 + k * 18, py + 10); a.setColor(new Color(40, 0, 0)); a.fillOval(px - 34, py - 4, 26, 20);
+            a.setColor(new Color(255, 255, 160)); a.fillRect(px - 14, py - 22, 6, 6); a.fillRect(px + 4, py - 22, 6, 6); }
+        a.dispose();
     }
     private static final java.awt.image.BufferedImage ARTE_LOBO = ler("lobisomem_corre.png");
     private static final java.awt.image.BufferedImage ARTE_COROA = ler("poder_coroa.png");

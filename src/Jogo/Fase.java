@@ -971,7 +971,7 @@ implements ActionListener {
         // planeta com anel: o fundo da fase mostra o planeta e os aneis de Saturno
         boolean naTurne = !reuniao && !emVanInferno && !intercepcao && planetaAtual < Turne.planetas(setorAtual);
         this.fundoEspacial.definirPlaneta(setorAtual, planetaAtual, naTurne && Turne.anel(setorAtual, planetaAtual));
-        this.fundoEspacial.desenhar(graphics2D2);
+        this.fundoEspacial.desenhar(graphics2D2); if (this.etapa == Etapa.BATALHA_CHEFE && this.chefe != null) this.chefe.desenharFundo(graphics2D2); // inferno da luta final
         if (setorAtual == FabricasIndustriais.SUCATA && etapa == Etapa.COMBATE) fabricas.desenhar(graphics2D2, GRUPOS_INIMIGOS[Math.min(7, chefesDerrotados)]); // fabricas montando as naves que vem por ai
         if(segredo!=null)segredo.desenhar(graphics2D2,tempoTotal,nave.temScanner());
         if(segredoCasco!=null)segredoCasco.desenhar(graphics2D2,tempoTotal,nave.temScanner());

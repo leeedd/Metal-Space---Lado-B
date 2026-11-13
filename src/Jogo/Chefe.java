@@ -455,6 +455,7 @@ public final class Chefe {
     String consumirCena() { return artista != null ? artista.consumirCena() : hell != null ? hell.consumirCena() : null; }
     /** Ponto para onde o gancho da van esta arrastando a nave (null se ninguem esta puxando). */
     double[] naveSugada() { return fim != null ? fim.naveSugada() : null; }
+    void desenharFundo(java.awt.Graphics2D g) { if (fim != null) fim.desenharFundo(g); }
     double tremor() { return fim != null ? fim.tremor() : 0; }
     double[] puxaoNave() { return hell != null ? hell.puxaoNave() : fim != null ? fim.puxaoNave() : null; }
     /** Aviso de meio de luta (dente arrancado, Belzebu invocado, Zaref revelado). */
