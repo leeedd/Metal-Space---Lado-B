@@ -4,6 +4,7 @@ import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -95,6 +96,7 @@ final class ChefeFinal {
         faiscaCorrente = Math.max(0, faiscaCorrente - dt);
         if (transicao > 0) { transicao = Math.max(0, transicao - dt); gancho = 0; raio = cargaRaio = demonio = avisoDemonio = 0; return; }
         if (rio > 0) { rio(dt, naveX, naveY, tiros); return; }
+        if (apresB > 0) { apresentar(dt); return; }
         if (belzMorte > 0) { if (belzMorte == BZ_MORTE) { tiros.clear(); SomJogo.tocar(SomJogo.Efeito.EXPLOSAO_GRANDE); } belzMorte = Math.max(0, belzMorte - dt); if (belzMorte == 0) { aviso = "O TRONO DESPERTA: ZAREF, O TEMPLARIO DO INFERNO!"; proximo(ZAREF, vidaZaref, 3.0); } return; } // o Belzebu desaba em cinzas
         int t = TAM[ato];
         double alvoX = W - t - (ato == BELZEBU ? (BELZEBU_ARTE != null ? 110 : 20) : 40);
@@ -362,6 +364,32 @@ final class ChefeFinal {
                     boolean perto = Math.random() < .45; alvoBX = perto ? Math.max(40, Math.min(W - t, nx + 160)) : W * .35 + Math.random() * (W * .65 - t); alvoBY = perto ? Math.max(TOPO - 20, Math.min(TiroChefe.LAVA_Y - t + 20, ny - t * .5)) : TOPO - 20 + Math.random() * (TiroChefe.LAVA_Y - t - TOPO + 40); } }
         }
     }
+    // ----- apresentacao do Belzebu: sobe da lava com a bateria, faz a virada, estoura o bumbo e entra a cartela com o nome -----
+    private static final double APRES_B = 5.2; private double apresB;
+    private void apresentar(double dt) {
+        double antes = APRES_B - apresB; apresB = Math.max(0, apresB - dt); double e = APRES_B - apresB; int t = TAM[BELZEBU];
+        double yf = TOPO + (TiroChefe.LAVA_Y - TOPO - t) / 2.0 + 10, sobe = Math.min(1, e / 1.3), ss = 1 - Math.pow(1 - sobe, 3);
+        y = TiroChefe.LAVA_Y + 30 + (yf - TiroChefe.LAVA_Y - 30) * ss; x = baseX;
+        if (antes == 0) for (int k = 0; k < 6; k++) { Respingo r = new Respingo(); r.x = x + 40 + k * (t - 80) / 5.0; r.t = RESP_AVISO - .05 * k; r.alt = 150 + (k % 3) * 60; respingos.add(r); } // a lava espirra quando ele sai
+        for (Respingo r : respingos) r.t += dt; respingos.removeIf(r -> r.t > RESP_AVISO + RESP_JATO);
+        if (e < 1.3) quadroB = 0;
+        else if (e < 2.7) { int b = (int) ((e - 1.3) / .14); quadroB = b % 2 == 0 ? 1 : 2; if ((int) ((antes - 1.3) / .14) != b && antes >= 1.3) SomJogo.tocar(SomJogo.Efeito.BATERIA_MEDIA); } // a virada
+        else { quadroB = 3; if (antes < 2.7) { SomJogo.tocar(SomJogo.Efeito.BATERIA_FORTE); flash = .16; } } // bumbo de fogo
+        if (antes < 2.9 && e >= 2.9) SomJogo.tocar(SomJogo.Efeito.TROVAO);
+        if (apresB == 0) { intervalo = 1.0; modoT = 0; batida = .5; }
+    }
+    /** Cartela de apresentacao do chefe: faixa escura com o nome grande e o titulo embaixo. */
+    private void cartela(Graphics2D g, String nome, String titulo, double e, double dur, Color cor) {
+        if (e < 0 || e > dur) return; double entra = Math.min(1, e / .35), sai = Math.min(1, (dur - e) / .35), k = Math.min(entra, sai);
+        Graphics2D a = (Graphics2D) g.create(); a.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+        int by = H - 205, bh = 92, off = (int) ((1 - entra) * -W + (1 - sai) * W);
+        a.setComposite(AlphaComposite.SrcOver.derive((float) (.78 * k))); a.setColor(Color.BLACK); a.fillRect(0, by, W, bh);
+        a.setComposite(AlphaComposite.SrcOver.derive((float) k)); a.setColor(cor); a.fillRect(0, by, W, 3); a.fillRect(0, by + bh - 3, W, 3);
+        a.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 54)); FontMetrics fm = a.getFontMetrics(); int nx = (W - fm.stringWidth(nome)) / 2 + off, ny = by + 56;
+        a.setColor(new Color(40, 0, 0)); for (int dx = -3; dx <= 3; dx += 3) for (int dy = -3; dy <= 3; dy += 3) a.drawString(nome, nx + dx, ny + dy);
+        a.setColor(cor); a.drawString(nome, nx, ny);
+        a.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18)); fm = a.getFontMetrics(); a.setColor(new Color(255, 220, 160)); a.drawString(titulo, (W - fm.stringWidth(titulo)) / 2 - off, by + 80); a.dispose();
+    }
     /** Desenho do Belzebu com as folhas novas, na mesma escala (a bateria e a referencia). */
     private void desenharBelzebu(Graphics2D g) {
         int t = TAM[BELZEBU]; BufferedImage f; int q;
@@ -511,6 +539,7 @@ final class ChefeFinal {
     // ---------------- dano e colisao ----------------
     boolean colide(Rectangle r) {
         if (rio > 0 || belzMorte > 0) return false;
+        if (apresB > 0) return r.intersects(getBounds()); // os tiros batem nele, mas nao ferem
         if (emDupla() && transicao <= 0 && entrada >= 1) {
             if (lobisomens()) { for (int i = 0; i < 2; i++) if (vivo(i) && r.intersects(lobo(i))) { alvoIrmao = i; return true; } return false; }
             for (int i = 0; i < 2; i++) if (vivo(i) && r.intersects(caixaIrmao(i))) { alvoIrmao = i; return true; } return false;
@@ -519,7 +548,7 @@ final class ChefeFinal {
         return r.intersects(getBounds());
     }
     boolean receberDano(int dano) {
-        if (rio > 0 || belzMorte > 0) return false;
+        if (rio > 0 || belzMorte > 0 || apresB > 0) return false;
         if (entrada < 1 || transicao > 0) { acertouCorrente = false; return false; }
         if (acertouCorrente) {
             acertouCorrente = false; faiscaCorrente = .12;
@@ -568,7 +597,7 @@ final class ChefeFinal {
         // a bateria do Belzebu: de longe e devagar, ate o bumbo dobrado
         if ((proxBatida -= dt) <= 0) { proxBatida = 1.3 - p * .85; batidaVisual = 1; SomJogo.tocar(p < .35 ? SomJogo.Efeito.BATERIA_FRACA : p < .75 ? SomJogo.Efeito.BATERIA_MEDIA : SomJogo.Efeito.BATERIA_FORTE); }
         batidaVisual = Math.max(0, batidaVisual - dt * 4);
-        if (rio == 0) { SomJogo.tocar(SomJogo.Efeito.CHEFE_ENTRADA); aviso = "BELZEBU, O ARAUTO DO INFERNO!"; }
+        if (rio == 0) { tiros.clear(); cuspidores.clear(); apresB = APRES_B; entrada = 1; int t = TAM[BELZEBU]; baseX = W - t - 20; x = baseX; modoB = BZ_BATERIA; modoT = 0; quadroB = 0; respingos.clear(); SomJogo.tocar(SomJogo.Efeito.CHEFE_ENTRADA); } // a apresentacao comeca
     }
     private double batidaVisual;
     /** Fundo do inferno: ceu de brasa, torres de ossos e o rio de lava embaixo (com a arte, quando chegar). */
@@ -622,7 +651,7 @@ final class ChefeFinal {
     }
     boolean tocaNave(Rectangle nave) {
         if (inferno() && nave.y + nave.height > TiroChefe.LAVA_Y + 14) return true; // encostou na lava
-        if (belzMorte > 0) return false;
+        if (belzMorte > 0 || apresB > 0) return false;
         if (rio > 0) { for (Respingo r : respingos) if (r.t > RESP_AVISO && nave.intersects(r.caixa())) return true; return false; }
         if (transicao > 0 || entrada < 1) return false;
         if (ato == ZAREF && noRaio(nave.getCenterX(), nave.getCenterY())) return true;
@@ -661,7 +690,8 @@ final class ChefeFinal {
             if (pose < .6 && ENTRADA == null) { float al = (float) (1 - pose / .6); a.setComposite(AlphaComposite.SrcOver.derive(al * .7f)); a.setColor(new Color(190, 170, 140)); int rw = (int) (t * (1 + pose * 2.5)); a.fillOval((int) cx - rw, (int) chao - 18, rw * 2, 36); } // poeira do pouso
             double k = pose - POSE_KIAI; if (k >= 0 && k < .5) { float al = (float) (1 - k / .5); for (int i = 0; i < 2; i++) { double[] o = irmao(i); a.setComposite(AlphaComposite.SrcOver.derive(al * .8f)); a.setColor(i == 0 ? VERDE : ROXO); a.setStroke(new BasicStroke(5)); int r = (int) (40 + k * 500); a.drawOval((int) o[0] - r, (int) o[1] - r, r * 2, r * 2); } } // estouro do kiai na pose
             a.dispose(); }
-        if (rio > 0) desenharRespingos(g);
+        if (rio > 0 || apresB > 0) desenharRespingos(g);
+        if (ato == BELZEBU && apresB > 0) cartela(g, "BELZEBU", "O ARAUTO DO INFERNO", APRES_B - apresB - 2.7, 2.5, new Color(255, 70, 30));
         for (Queda qd : quedas) desenharQueda(g, qd);
         if (flash > 0) {
             g.setColor(new Color(255, 220, 160, (int) (flash / .16 * 200))); Rectangle b = getBounds();
@@ -777,7 +807,7 @@ final class ChefeFinal {
     }
     /** Na dobra a nave aparece sozinha por cima do vazio. */
     /** Tremor da tela durante o buraco negro (0 = parado). */
-    double tremor() { if (rio > 0) return batidaVisual * (1 + (1 - rio / RIO_DUR) * 5); if (ato != BELZEBU || transicao <= 0) return 0; double t = INVOCACAO - transicao; return t > FUSAO_FIM && t < BURACO_FIM ? 3 + (t - FUSAO_FIM) * 3.5 : 0; }
+    double tremor() { if (apresB > 0) { double e = APRES_B - apresB; return e < 1.3 ? 5 : e > 2.7 && e < 3.2 ? 8 : 0; } if (rio > 0) return batidaVisual * (1 + (1 - rio / RIO_DUR) * 5); if (ato != BELZEBU || transicao <= 0) return 0; double t = INVOCACAO - transicao; return t > FUSAO_FIM && t < BURACO_FIM ? 3 + (t - FUSAO_FIM) * 3.5 : 0; }
     private static void brilho(Graphics2D g, double cx, double cy, double r) {
         for (int k = 3; k >= 1; k--) { int rr = (int) (r * k / 3); g.setColor(new Color(90, 255, 120, 40 + (3 - k) * 30)); g.fillOval((int) cx - rr, (int) cy - rr, rr * 2, rr * 2); }
     }
