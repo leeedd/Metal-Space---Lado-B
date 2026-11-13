@@ -93,6 +93,11 @@ public final class TiroChefe {
             case ATADURA: desenharAtadura(g, px, py); return;
             case TINTA: desenharTinta(g, px, py); return;
             case DIABRETE: case CAO: case GARGULA: case CUSPIDOR: desenharDemonio(g, px, py); return;
+            case CORTE_FOGO: { // meia-lua de fogo de um golpe de lamina (guitarra-machado do Belzebu)
+                if (quadros(g, ARTE_CORTE_FOGO, 3, Math.min(2, (int) (tempo * 6)), 190, px, py, false)) return;
+                Graphics2D a = (Graphics2D) g.create(); float al = (float) Math.max(0, 1 - tempo / Math.max(.1, duracao)); int r = 80;
+                for (int k = 0; k < 4; k++) { a.setColor(new Color(255, 230 - k * 50, 120 - k * 30, (int) (230 * al))); a.setStroke(new java.awt.BasicStroke(14 - k * 3)); a.drawArc(px - r / 2 + k * 6, py - r, r * 2, r * 2, 100, 160); }
+                a.dispose(); return; }
             case ONDA_BUMBO: { int s = (int) (70 + Math.min(1, tempo / 1.2) * 130); if (quadros(g, ARTE_BUMBO, 4, Math.min(3, (int) (tempo * 6)), s, px, py, false)) return;
                 g.setColor(new Color(255, 120, 30, 200)); g.setStroke(new java.awt.BasicStroke(8)); g.drawOval(px - s / 3, py - s / 3, s * 2 / 3, s * 2 / 3); return; }
             case RIFF: { if (quadros(g, ARTE_RIFF, 4, Math.min(3, (int) (tempo * 10)), 150, px, py, true)) return;
@@ -334,6 +339,7 @@ public final class TiroChefe {
         if (estilo == DIABRETE) return new Rectangle((int) x - 18, (int) y - 16, 36, 32);
         if (estilo == ONDA_BUMBO) { int s = (int) ((70 + Math.min(1, tempo / 1.2) * 130) * .55); return new Rectangle((int) x - s / 2, (int) y - s / 2, s, s); }
         if (estilo == RIFF) return new Rectangle((int) x - 30, (int) y - 12, 60, 24);
+        if (estilo == CORTE_FOGO) return new Rectangle((int) x - 40, (int) y - 75, 60, 150);
         if (estilo == GRITO) { int s = (int) (40 + tempo * 50); return new Rectangle((int) x - 14, (int) y - s * 3 / 4, 34, s * 3 / 2); }
         if (estilo == CAO) return new Rectangle((int) x - 45, (int) y - 22, 90, 46);
         if (estilo == GARGULA) return new Rectangle((int) x - 35, (int) y - 30, 70, 60);
@@ -440,7 +446,7 @@ public final class TiroChefe {
     private static final java.awt.image.BufferedImage ARTE_ONDA = ler("onda_som_krovax.png");
     /** A onda do paredao de caixas empurra a nave em vez de so ferir. */
     boolean empurra() { return estilo == ONDA_SOM || estilo == ONDA_BUMBO || estilo == GRITO; }
-    private static final java.awt.image.BufferedImage ARTE_BUMBO = ler("poder_bumbo.png"), ARTE_RIFF = ler("poder_riff.png"), ARTE_GRITO = ler("poder_grito.png");
+    private static final java.awt.image.BufferedImage ARTE_BUMBO = ler("poder_bumbo.png"), ARTE_RIFF = ler("poder_riff.png"), ARTE_CORTE_FOGO = ler("poder_espada_fogo.png"), ARTE_GRITO = ler("poder_grito.png");
     private int alturaOnda() { return 58 + (int) (Math.min(1, tempo * 1.2) * 46); }
     private void desenharOndaKrovax(Graphics2D tela, int px, int py) {
         Graphics2D g = (Graphics2D) tela.create();
@@ -468,7 +474,7 @@ public final class TiroChefe {
     }
     /** Pneu em chamas deixa fogo na pista: some sozinho em 1,4 s. */
     /** Pista em chamas da moto do Valdrak: sobe rapido, fica queimando e baixa no fim. */
-    static final int PISTA_FOGO = 35, BOLA_FOGO = 36, ATADURA = 37, BLOCO = 38, SOLDADO = 39, CARRUAGEM = 40, ESFINGE = 41, RAINHA = 42, TINTA = 43, ESTRELA_ECLIPSE = 44, TORTA = 45, CORNETA = 46, CONFETE = 47, MORTO = 48, LOBISOMEM = 49, OSSO_PE = 50, OSSO_SOCO = 51, OSSO_NOTA = 52, PEGADA = 53, DIABRETE = 54, CAO = 55, GARGULA = 56, CUSPIDOR = 57, ONDA_BUMBO = 58, RIFF = 59, GRITO = 60;
+    static final int PISTA_FOGO = 35, BOLA_FOGO = 36, ATADURA = 37, BLOCO = 38, SOLDADO = 39, CARRUAGEM = 40, ESFINGE = 41, RAINHA = 42, TINTA = 43, ESTRELA_ECLIPSE = 44, TORTA = 45, CORNETA = 46, CONFETE = 47, MORTO = 48, LOBISOMEM = 49, OSSO_PE = 50, OSSO_SOCO = 51, OSSO_NOTA = 52, PEGADA = 53, DIABRETE = 54, CAO = 55, GARGULA = 56, CUSPIDOR = 57, ONDA_BUMBO = 58, RIFF = 59, GRITO = 60, CORTE_FOGO = 61;
     static final int LAVA_Y = Config.ALTURA - 78; private static final double PISTA_DURA = 2.6; // LAVA_Y: superficie do rio de lava do inferno
     private double fogoPista() { return Math.max(0, Math.min(1, Math.min(tempo / .15, (PISTA_DURA - tempo) / .6))); }
     private void desenharPistaFogo(Graphics2D tela, int px, int py) {
