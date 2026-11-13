@@ -603,7 +603,9 @@ final class ChefeFinal {
     /** Fundo do inferno: ceu de brasa, torres de ossos e o rio de lava embaixo (com a arte, quando chegar). */
     void desenharFundo(Graphics2D g) {
         if (!inferno()) return;
-        if (RIO_ARTE != null) { int w = RIO_ARTE.getWidth() * H / RIO_ARTE.getHeight(), off = (int) (tempo * 40) % Math.max(1, w); for (int xx = -off; xx < W; xx += w) g.drawImage(RIO_ARTE, xx, 0, w, H, null); }
+        if (FUNDO_ARTE != null) { int h = TiroChefe.LAVA_Y + 40, w = FUNDO_ARTE.getWidth() * h / FUNDO_ARTE.getHeight(), off = (int) (tempo * 22) % (w * 2); // rola devagar; um ladrilho sim, outro espelhado, para nao aparecer emenda
+            for (int xx = -off, k = 0; xx < W; xx += w, k++) { if (k % 2 == 0) g.drawImage(FUNDO_ARTE, xx, 0, w, h, null); else g.drawImage(FUNDO_ARTE, xx + w, 0, -w, h, null); } }
+        else if (RIO_ARTE != null) { int w = RIO_ARTE.getWidth() * H / RIO_ARTE.getHeight(), off = (int) (tempo * 40) % Math.max(1, w); for (int xx = -off; xx < W; xx += w) g.drawImage(RIO_ARTE, xx, 0, w, H, null); }
         else {
             g.setPaint(new java.awt.GradientPaint(0, TOPO, new Color(40, 0, 8), 0, H, new Color(150, 30, 10))); g.fillRect(0, 0, W, H);
             java.util.Random r = new java.util.Random(31); int off = (int) (tempo * 25);
@@ -614,11 +616,17 @@ final class ChefeFinal {
         }
         desenharNavesCaidas(g); desenharPlateia(g);
         // o rio de lava: faixas brilhando que correm para a esquerda
-        int ly = TiroChefe.LAVA_Y; g.setPaint(new java.awt.GradientPaint(0, ly, new Color(255, 200, 60), 0, H, new Color(180, 30, 0))); g.fillRect(0, ly, W, H - ly);
+        int ly = TiroChefe.LAVA_Y;
+        if (LAVA_ARTE != null) { int fh = LAVA_ARTE.getHeight() / 4, q = (int) (tempo * 6) % 4, off = (int) (tempo * 90) % W, y0 = ly + 4 - 54; // a crista da arte fica onde a lava fere
+            for (int xx = -off; xx < W; xx += W) g.drawImage(LAVA_ARTE, xx, y0, xx + W, Math.max(H, y0 + fh), 0, q * fh, LAVA_ARTE.getWidth(), q * fh + fh, null);
+            if (batidaVisual > 0) { g.setColor(new Color(255, 40, 0, (int) (60 * batidaVisual * Math.min(1, (1 - rio / RIO_DUR) * 2)))); g.fillRect(0, TOPO, W, H - TOPO); }
+            return; }
+        g.setPaint(new java.awt.GradientPaint(0, ly, new Color(255, 200, 60), 0, H, new Color(180, 30, 0))); g.fillRect(0, ly, W, H - ly);
         for (int k = 0; k < 6; k++) { int yy = ly + 8 + k * 12; g.setColor(new Color(255, 240 - k * 25, 120 - k * 15, 150)); for (int xx = -80; xx < W; xx += 80) { int sx = Math.floorMod(xx - (int) (tempo * (120 + k * 30)), W + 80) - 40; g.fillRoundRect(sx, yy + (int) (Math.sin(tempo * 3 + xx) * 3), 46, 4, 4, 4); } }
         g.setColor(new Color(255, 230, 120)); for (int xx = 0; xx < W; xx += 6) g.fillRect(xx, ly - 2 + (int) (Math.sin(xx * .05 + tempo * 4) * 3), 6, 4); // a crista da lava
         if (batidaVisual > 0) { g.setColor(new Color(255, 40, 0, (int) (60 * batidaVisual * Math.min(1, (1 - rio / RIO_DUR) * 2)))); g.fillRect(0, TOPO, W, H - TOPO); } // cada batida pulsa a tela
     }
+    private static final BufferedImage FUNDO_ARTE = ler("inferno_fundo.png"), LAVA_ARTE = ler("inferno_lava.png");
     private static final BufferedImage RIO_ARTE = ler("inferno_rio_lava.png"), RESPINGO_ARTE = ler("respingo_lava.png");
     /** Naves de outros pilotos, escurecidas e avermelhadas: de longe, no inferno. */
     private static final BufferedImage[] NAVES_LONGE = navesLonge();
