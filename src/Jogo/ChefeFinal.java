@@ -553,7 +553,7 @@ final class ChefeFinal {
         rio = Math.max(0, rio - dt); double p = 1 - rio / RIO_DUR; x = W + 40;
         // respingos: alguns caem aleatorios, outros embaixo da nave para obrigar a mexer
         for (Respingo r : respingos) r.t += dt; respingos.removeIf(r -> r.t > RESP_AVISO + RESP_JATO);
-        if ((proxRespingo -= dt) <= 0 && rio > 3) { proxRespingo = 1.4 - p * .6; Respingo r = new Respingo(); r.x = Math.random() < .4 ? naveX + 22 + (Math.random() - .5) * 60 : 60 + Math.random() * (W - 120); r.alt = 220 + Math.random() * 200; respingos.add(r); SomJogo.tocar(SomJogo.Efeito.FOGO); }
+        if ((proxRespingo -= dt) <= 0 && rio > 3) { proxRespingo = 1.4 - p * .6; Respingo r = new Respingo(); r.x = Math.random() < .4 ? naveX + 22 + (Math.random() - .5) * 60 : 60 + Math.random() * (W - 120); r.alt = 200 + Math.random() * 170; respingos.add(r); SomJogo.tocar(SomJogo.Efeito.FOGO); }
         // hordas: cada onda escolhe um tipo de demonio; ficam mais fortes perto do fim
         if ((proxOnda -= dt) <= 0 && rio > 5 && tiros.size() < 60) { ondas++; int tipo = ondas % 4; proxOnda = 4.2 - p * 1.4;
             if (tipo == 1) { double cy = TOPO + 60 + Math.random() * (TiroChefe.LAVA_Y - TOPO - 160); for (int k = 0; k < 6 + (int) (p * 4); k++) tiros.add(new TiroChefe(W + 30 + k * 26, cy + (k % 3 - 1) * 30, -150, 0, false, TiroChefe.DIABRETE, TiroChefe.Movimento.RETO).comVariante(k).demonio()); }
@@ -561,7 +561,7 @@ final class ChefeFinal {
             else if (tipo == 3) { for (int k = 0; k < 3; k++) tiros.add(new TiroChefe(Math.max(120, Math.min(W - 80, naveX + 120 + k * 150)), TOPO + 10, 0, 0, true, TiroChefe.GARGULA, TiroChefe.Movimento.RETO).comVariante(k).demonio()); }
             else { TiroChefe c = new TiroChefe(W + 60, TOPO + 90 + Math.random() * 220, -70, 0, true, TiroChefe.CUSPIDOR, TiroChefe.Movimento.RETO).demonio(); tiros.add(c); cuspidores.add(c); } }
         cuspidores.removeIf(c -> !c.isVisible());
-        for (TiroChefe c : cuspidores) if (c.cuspidorParado() && Math.random() < dt / 1.5) { double a = Math.atan2(naveY + 18 - c.getY(), naveX + 22 - c.getX()); tiro(tiros, c.getX() - 40, c.getY(), a, 280, true, TiroChefe.BOLA_FOGO, TiroChefe.Movimento.RETO, null); }
+        for (TiroChefe c : cuspidores) if (c.cuspidorParado() && Math.random() < dt / 1.5) { c.cuspir(); double a = Math.atan2(naveY + 18 - c.getY(), naveX + 22 - c.getX()); tiro(tiros, c.getX() - 70, c.getY(), a, 280, true, TiroChefe.BOLA_FOGO, TiroChefe.Movimento.RETO, null); }
         // a bateria do Belzebu: de longe e devagar, ate o bumbo dobrado
         if ((proxBatida -= dt) <= 0) { proxBatida = 1.3 - p * .85; batidaVisual = 1; SomJogo.tocar(p < .35 ? SomJogo.Efeito.BATERIA_FRACA : p < .75 ? SomJogo.Efeito.BATERIA_MEDIA : SomJogo.Efeito.BATERIA_FORTE); }
         batidaVisual = Math.max(0, batidaVisual - dt * 4);
@@ -589,8 +589,11 @@ final class ChefeFinal {
     private static final BufferedImage RIO_ARTE = ler("inferno_rio_lava.png"), RESPINGO_ARTE = ler("respingo_lava.png");
     private void desenharRespingos(Graphics2D g) {
         for (Respingo r : respingos) { int ly = TiroChefe.LAVA_Y;
+            if (r.t < RESP_AVISO && RESPINGO_ARTE != null) { int fw = RESPINGO_ARTE.getWidth() / 4, fh = RESPINGO_ARTE.getHeight(), w = 90, h = w * fh / fw; double inf = .7 + .3 * Math.abs(Math.sin(r.t * 10)); // a bolha incha: aviso
+                g.drawImage(RESPINGO_ARTE, (int) r.x - w / 2, ly + 12 - (int) (h * inf), (int) r.x + w / 2, ly + 12, 0, 0, fw, fh, null); continue; }
             if (r.t < RESP_AVISO) { double e = r.t / RESP_AVISO; int bw = (int) (20 + e * 30); g.setColor(new Color(255, 250, 180, (int) (120 + 120 * Math.abs(Math.sin(r.t * 18))))); g.fillOval((int) r.x - bw / 2, ly - 8, bw, 16); continue; } // a lava borbulha: aviso
-            double h = r.jato(); if (RESPINGO_ARTE != null) { int fw = RESPINGO_ARTE.getWidth() / 4, fh = RESPINGO_ARTE.getHeight(), q = Math.min(3, 1 + (int) ((r.t - RESP_AVISO) / RESP_JATO * 3)), w = (int) (h * fw / fh) + 30; g.drawImage(RESPINGO_ARTE, (int) r.x - w / 2, (int) (ly - h), (int) r.x + w / 2, ly + 10, q * fw, 0, q * fw + fw, fh, null); continue; }
+            double h = r.jato(); if (RESPINGO_ARTE != null) { int fw = RESPINGO_ARTE.getWidth() / 4, fh = RESPINGO_ARTE.getHeight(); double e = (r.t - RESP_AVISO) / RESP_JATO; int q = e < .3 ? 1 : e < .7 ? 2 : 3, hh = (int) (r.alt * .95), w = hh * fw / fh;
+                g.drawImage(RESPINGO_ARTE, (int) r.x - w / 2, ly + 12 - hh, (int) r.x + w / 2, ly + 12, q * fw, 0, q * fw + fw, fh, null); continue; }
             g.setPaint(new java.awt.GradientPaint(0, (float) (ly - h), new Color(255, 250, 170), 0, ly, new Color(230, 60, 0))); g.fillRoundRect((int) r.x - 16, (int) (ly - h), 32, (int) h + 6, 20, 20);
             g.setColor(new Color(255, 200, 60)); java.util.Random rr = new java.util.Random((long) (r.x * 7)); for (int k = 0; k < 8; k++) { double ang = -Math.PI / 2 + (rr.nextDouble() - .5) * 1.6, d = h * .2 + rr.nextDouble() * 40; g.fillOval((int) (r.x + Math.cos(ang) * d), (int) (ly - h + 10 + Math.sin(ang) * d * .4 + (r.t - RESP_AVISO) * 60), 8, 8); } }
     }

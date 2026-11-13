@@ -22,6 +22,8 @@ public final class TiroChefe {
     boolean abativel() { return estilo == MORTO || estilo >= DIABRETE && estilo <= CUSPIDOR; }
     /** Demonios do inferno: quantos tiros aguentam. */
     TiroChefe demonio() { resistencia = estilo == DIABRETE ? 1 : estilo == CAO ? 2 : estilo == GARGULA ? 3 : estilo == CUSPIDOR ? 7 : resistencia; return this; }
+    private double cuspe = -9;
+    void cuspir() { cuspe = tempo; }
     boolean cuspidorParado() { return estilo == CUSPIDOR && vx == 0 && visivel; }
     private boolean pulou;
     /** Leva um tiro; devolve true quando o morto desmonta. */
@@ -50,7 +52,7 @@ public final class TiroChefe {
         if (estilo == MORTO && tempo < 6) { // enxame: cada morto cambaleia na direcao da nave, com um desvio proprio para nao virar fila
             double ang = variante * 2.399, ax = alvoX + Math.cos(ang) * 46, ay = alvoY + Math.sin(ang) * 46 + Math.sin(tempo * 3 + variante) * 30, dx = ax - x, dy = ay - y, d = Math.max(1, Math.hypot(dx, dy)), vel = 105 + variante % 5 * 12;
             vx += (dx / d * vel - vx) * Math.min(1, dt * 1.6); vy += (dy / d * vel - vy) * Math.min(1, dt * 1.6); }
-        if (estilo == DIABRETE) { // bando: voa em zigue-zague atras da nave
+        if (estilo == DIABRETE && tempo < 5.5) { // bando: voa em zigue-zague atras da nave; depois segue reto e sai
             double dx = alvoX - x, dy = alvoY + Math.sin(tempo * 5 + variante) * 50 - y, d = Math.max(1, Math.hypot(dx, dy)), vel = 190 + variante % 4 * 15;
             vx += (dx / d * vel - vx) * Math.min(1, dt * 2.2); vy += (dy / d * vel - vy) * Math.min(1, dt * 2.2); }
         else if (estilo == CAO) { // corre pela margem da lava e salta em cima da nave
@@ -323,9 +325,9 @@ public final class TiroChefe {
         if (estilo == OSSO_SOCO) return new Rectangle((int) x - 20, (int) y - 18, 40, 36);
         if (estilo == MORTO) return new Rectangle((int) x - 20, (int) y - 30, 40, 64);
         if (estilo == DIABRETE) return new Rectangle((int) x - 18, (int) y - 16, 36, 32);
-        if (estilo == CAO) return new Rectangle((int) x - 34, (int) y - 20, 68, 40);
-        if (estilo == GARGULA) return new Rectangle((int) x - 30, (int) y - 28, 60, 56);
-        if (estilo == CUSPIDOR) return new Rectangle((int) x - 46, (int) y - 46, 92, 92);
+        if (estilo == CAO) return new Rectangle((int) x - 45, (int) y - 22, 90, 46);
+        if (estilo == GARGULA) return new Rectangle((int) x - 35, (int) y - 30, 70, 60);
+        if (estilo == CUSPIDOR) return new Rectangle((int) x - 50, (int) y - 50, 100, 100);
         if (estilo == LOBISOMEM) return new Rectangle((int) x - 40, (int) y - 25, 80, 50);
         if (estilo == TINTA) return new Rectangle(-99, -99, 0, 0); // a nuvem de tinta nao machuca: so esconde os tiros
         if (estilo == ATADURA) return new Rectangle((int) x - 14, (int) y - 8, 28, 16);
@@ -514,7 +516,11 @@ public final class TiroChefe {
     /** Demonios do inferno: com a arte (4 quadros virados para a esquerda) ou um desenho simples ate ela chegar. */
     private void desenharDemonio(Graphics2D g, int px, int py) {
         java.awt.image.BufferedImage arte = estilo == DIABRETE ? ARTE_DIABRETE : estilo == CAO ? ARTE_CAO : estilo == GARGULA ? ARTE_GARGULA : ARTE_CUSPIDOR;
-        int tam = estilo == DIABRETE ? 52 : estilo == CAO ? 90 : estilo == GARGULA ? 84 : 120, q = (int) (tempo * 10 + variante) % 4;
+        int tam = estilo == DIABRETE ? 92 : estilo == CAO ? 150 : estilo == GARGULA ? 132 : 165, q;
+        if (estilo == DIABRETE) q = (int) (tempo * 12 + variante) % 4; // bate as asas
+        else if (estilo == CAO) q = pulou ? 3 : (int) (tempo * 12) % 3; // corre e salta de boca aberta
+        else if (estilo == GARGULA) q = pulou ? 3 : (int) (tempo * 8) % 3; // paira e mergulha
+        else { double c = tempo - cuspe; q = c < .18 ? 1 : c < .45 ? 2 : c < .8 ? 3 : 0; } // estufa, cospe e solta fumaca
         if (arte != null && quadros(g, arte, 4, q, tam, px, py, false)) return;
         Graphics2D a = (Graphics2D) g.create(); a.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_OFF); double bat = Math.sin(tempo * 22 + variante);
         if (estilo == DIABRETE) { a.setColor(new Color(90, 10, 20)); int asa = (int) (bat * 9);
