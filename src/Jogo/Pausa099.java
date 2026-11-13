@@ -1,0 +1,88 @@
+package Jogo;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+final class Pausa099 {
+ static final Color OURO=new Color(255,206,98),AZUL=new Color(65,219,238),CINZA=new Color(133,158,180);
+ static final String[] NAVES={"RAPTOR MK-I","SHADOW","VALKYRIE","BERSERKER","METAL GOD"};
+ static String nomeNave(int m){return NAVES[Math.max(0,Math.min(4,m))];}
+ static final String[] ABAS={"ARSENAL","NAVE","RELIQUIAS","MAPA","MERCADO","SISTEMA","CONTRATOS"};
+ /** Contrato em andamento e arquivo dos encerrados (a Fase atualiza antes de desenhar). */
+ static Contrato contratoAtivo; static java.util.List<Contrato> arquivo=new java.util.ArrayList<>();
+ static final String[][] PECAS={{"CHASSI RAPTOR","CANHAO DUPLO","TURBINA RAPTOR"},{"CHASSI SHADOW","AGULHAS GEMEAS","MOTOR FANTASMA"},{"CHASSI VALKYRIE","LEQUE VALKYRIE","REATOR VALKYRIE"},{"CHASSI BERSERKER","OBUS PESADO","TURBINA CERCO"},{"CHASSI METAL GOD","TRIDENTE REAL","REATOR LENDARIO"}};
+ static void txt(Graphics2D g,String s,int x,int y,Color c){g.setColor(c);g.setFont(new Font(Font.MONOSPACED,Font.BOLD,9));g.drawString(s,x,y);}
+ /** Texto que encolhe a fonte para caber na largura do cartao. */
+ static void txtCabe(Graphics2D g,String s,int x,int y,int largura,Color c){int t=9;g.setFont(new Font(Font.MONOSPACED,Font.BOLD,t));while(t>6&&g.getFontMetrics().stringWidth(s)>largura)g.setFont(new Font(Font.MONOSPACED,Font.BOLD,--t));g.setColor(c);g.drawString(s,x,y);}
+ static void txtDir(Graphics2D g,String s,int x,int y,Color c){g.setFont(new Font(Font.MONOSPACED,Font.BOLD,9));txt(g,s,x-g.getFontMetrics().stringWidth(s),y,c);}
+ static void txtCentro(Graphics2D g,String s,int x,int y,Color c){g.setFont(new Font(Font.MONOSPACED,Font.BOLD,9));txt(g,s,x-g.getFontMetrics().stringWidth(s)/2,y,c);}
+ static void box(Graphics2D g,int x,int y,int w,int h,boolean sel){g.setColor(new Color(10,20,34));g.fillRect(x,y,w,h);g.setColor(sel?OURO:new Color(48,76,101));g.drawRect(x,y,w,h);g.setColor(sel?new Color(144,88,35):new Color(20,41,58));g.drawRect(x+1,y+1,w-2,h-2);}
+ static void bar(Graphics2D g,int x,int y,int w,int carga,Color c){for(int i=0;i<w/4;i++){g.setColor(i*100<Math.max(0,carga)*(w/4)?c:new Color(32,47,62));g.fillRect(x+i*4,y,3,5);}}
+ /** Encaixe selecionado no mercado (0 arma, 1 motor, 2 blindagem, 3 modulo). */
+ static int encaixeMercado;
+ private static final java.awt.image.BufferedImage[] ESPECIAIS=new java.awt.image.BufferedImage[4];private static boolean especiaisLidos;
+ /** Icones da aba Especiais (especial_0..3.png): canhao criogenico, lanca-chamas, amuleto, reator. */
+ static boolean especial(Graphics2D g,int i,int x,int y,int s){if(!especiaisLidos){especiaisLidos=true;for(int k=0;k<4;k++){java.net.URL u=Pausa099.class.getResource("/ImagemIcon/especial_"+k+".png");if(u!=null)try{ESPECIAIS[k]=javax.imageio.ImageIO.read(u);}catch(java.io.IOException e){}}}
+  if(ESPECIAIS[i]==null)return false;Graphics2D a=(Graphics2D)g.create();a.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BILINEAR);a.drawImage(ESPECIAIS[i],x,y,s,s,null);a.dispose();return true;}
+ static int CUSTO_I(int i){return Poderes099.CUSTO[i];}
+ static int icone(int i){return new int[]{9,6,8,6,7,10}[i];}
+ static void desenhar(Graphics2D tela,int aba,int cursor,ProgressaoNave inv,Nave nave,Energia098 energia,Poderes099 powers,boolean gelo,boolean fogo,double tempo,String aviso){
+  BufferedImage b=new BufferedImage(480,300,1);Graphics2D g=b.createGraphics();g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_OFF);g.setColor(new Color(3,7,15));g.fillRect(0,0,480,300);
+  for(int x=0;x<480;x+=16){g.setColor(new Color(26,42,59));g.fillRect(x,0,14,5);g.fillRect(x,295,14,5);g.setColor((x+(int)(tempo*8))%48<24?Color.RED:new Color(70,18,27));g.fillRect(x+3,1,6,2);}
+  txt(g,"METAL SPACE / SISTEMAS DE BORDO",12,20,OURO);txtDir(g,"CR "+inv.saldo(),466,20,AZUL);for(int i=0;i<7;i++){box(g,12+i*65,29,63,21,i==aba);txtCabe(g,(i+1)+" "+ABAS[i],16+i*65,43,57,i==aba?OURO:CINZA);}
+  int m=nave.getModeloVisual();
+  if(aba==0){for(int i=0;i<8;i++){int x=12+i%2*145,y=56+i/2*47;boolean tem=inv.temChaveIndice(i);box(g,x,y,137,42,cursor==i);if(tem)Poderes099.icone(g,i,x+3,y+4,34,tempo);else txt(g,"?",x+16,y+25,CINZA);g.setColor(new Color(10,20,34));g.fillRect(x+2,y+30,9,11);txt(g,""+(i+1),x+4,y+39,tem?Color.WHITE:CINZA);txtCabe(g,tem?Poderes099.NOMES[i]:"DESCONHECIDO",x+41,y+13,92,tem?Color.WHITE:CINZA);HudEnergia.miniBarra(g,x+41,y+20,90,powers.energia[i],CUSTO_I(i),Poderes099.CORES_SIMBOLO[i],tem);txt(g,!tem?"CHEFE NAO VENCIDO":powers.cooldown[i]>0?"RECARGA "+(int)Math.ceil(powers.cooldown[i])+"s":powers.selecionado==i?"EQUIPADO / C":"ESPACO: EQUIPAR",x+41,y+36,tem?OURO:CINZA);}
+   box(g,302,56,164,183,false);Poderes099.icone(g,cursor,341,64,86,tempo);txt(g,Poderes099.NOMES[cursor],312,166,OURO);String s=Poderes099.DICAS[cursor];int at=s.lastIndexOf(' ',Math.min(s.length()-1,22));if(s.length()>23){txt(g,s.substring(0,at),312,182,CINZA);txt(g,s.substring(at+1),312,195,CINZA);}else txt(g,s,312,182,CINZA);txt(g,"ENERGIA "+powers.energia[cursor]+"  CUSTO "+Poderes099.CUSTO[cursor],312,218,AZUL);txt(g,"USOS RESTANTES: "+(powers.energia[cursor]/Poderes099.CUSTO[cursor]),312,228,OURO);if(inv.reator())txtCabe(g,"FUSAO V: "+LaserConvergencia.NOMES[cursor],312,206,150,new Color(200,130,255));
+   txt(g,"Q GELO",12,256,AZUL);bar(g,52,250,100,gelo?energia.carga(0):0,AZUL);txt(g,"E FOGO",166,256,OURO);bar(g,206,250,100,fogo?energia.carga(1):0,OURO);txt(g,"V FUSAO",320,256,OURO);txtDir(g,"CAPSULAS RECARREGAM",466,256,CINZA);
+  }else if(aba==1){box(g,12,56,282,183,false);txt(g,NAVES[m],24,74,OURO);Graphics2D a=(Graphics2D)g.create();a.translate(128,112);ArteNaves.desenharJogador(a,nave.getNivel(),m,0,0,tempo);a.dispose();txt(g,nave.perfil().funcao+"  /  SHIFT: "+Nave.TRUQUES[m],24,182,AZUL);txt(g,Nave.TRUQUES_DICA[m],24,192,CINZA);txt(g,"CASCO "+nave.getVida()+"/"+nave.getVidaMaxima(),24,200,Color.WHITE);bar(g,24,208,258,100*nave.getVida()/nave.getVidaMaxima(),Color.GREEN);txt(g,"DANO "+nave.danoBalistico()+" / EVOLUCAO "+nave.getNivel(),24,230,OURO);txtDir(g,"NUCLEOS DE CASCO "+inv.quantidadeNucleos()+"/8",282,230,new Color(255,110,110));for(int i=0;i<3;i++){txt(g,PECAS[m][i],302,68+i*28,Color.WHITE);bar(g,302,74+i*28,164,100*inv.peca(m,i)/(i==0?8:3),OURO);}txt(g,"RESERVAS / R: REPARAR",302,158,AZUL);for(int i=0;i<4;i++){box(g,302+i*42,166,38,73,false);Arte098.item(g,inv.temTanque(i)?Math.min(3,(inv.carga(i)+32)/33):9,306+i*42,176,30);bar(g,305+i*42,224,32,inv.carga(i),AZUL);}
+  }else if(aba==2){for(int i=0;i<8;i++){int x=12+i%4*116,y=56+i/4*94;box(g,x,y,108,88,cursor==i);boolean tem=inv.temChaveIndice(i);Medalhas.desenhar(g,ProgressaoNave.ORDEM[i],tem,x+28,y+6,52,tempo);txtCentro(g,tem?Poderes099.NOMES[i]:"???",x+54,y+76,tem?OURO:CINZA);}txt(g,"RELIQUIAS LIBERAM PODERES PERMANENTES",12,256,AZUL);
+  }else if(aba==4){
+   // Mercado em encaixes: < > escolhe o encaixe, cima/baixo a peca, ESPACO compra / equipa / desequipa
+   int e=encaixeMercado;Color VERDE=new Color(110,230,130),VERM=new Color(240,100,100);
+   for(int k=0;k<6;k++){int bx=12+k*76,bw=73;box(g,bx,56,bw,40,k==e);txtCabe(g,k<4?Pecas.ENCAIXES[k]:k==4?"ESPECIAIS":"EVOLUCAO",bx+5,69,bw-8,k==e?OURO:k>=4?new Color(255,150,90):CINZA);
+    if(k<4){Pecas q=Pecas.obter(inv.equipada(m,k));if(q!=null&&Pecas.temIcone(q.id))Pecas.icone(g,q.id,bx+bw-24,59,20);txtCabe(g,q==null?"VAZIO":q.nome,bx+5,86,bw-8,q==null?CINZA:Color.WHITE);}
+    else txtCabe(g,k==4?"ARMAS E ITENS":"NIVEL "+inv.peca(m,0)+"/8",bx+5,86,bw-8,Color.WHITE);}
+   if(e==5){
+    // Evolucao: compra o proximo nivel da nave atual; o estagio (arte) muda nos niveis 3 e 6
+    int nv=inv.peca(m,0),preco=inv.precoMercado(m,0);String[] est={"ESTAGIO I","ESTAGIO II","ESTAGIO III"};
+    box(g,12,102,282,137,false);txt(g,NAVES[m],24,118,OURO);txtDir(g,"NIVEL "+nv+"/8",282,118,AZUL);
+    Graphics2D a=(Graphics2D)g.create();a.translate(62,150);ArteNaves.desenharJogador(a,nv,m,0,0,tempo);a.dispose();txt(g,est[ArteNaves.estagio(nv)],50,212,CINZA);
+    if(nv<8){txt(g,"PROXIMO >",136,140,OURO);Graphics2D b2=(Graphics2D)g.create();b2.translate(196,150);ArteNaves.desenharJogador(b2,nv+1,m,0,0,tempo);b2.dispose();txt(g,est[ArteNaves.estagio(nv+1)],186,212,ArteNaves.estagio(nv+1)>ArteNaves.estagio(nv)?OURO:CINZA);}
+    for(int k=0;k<8;k++){g.setColor(k<nv?OURO:new Color(40,50,64));g.fillRect(24+k*33,222,29,6);if(k==2||k==5){g.setColor(Color.WHITE);g.fillRect(24+k*33+28,220,2,10);}}
+    box(g,302,102,164,137,false);txt(g,nv>=8?"EVOLUCAO MAXIMA":"NIVEL "+(nv+1),310,118,OURO);
+    if(nv<8){boolean troca=ArteNaves.estagio(nv+1)>ArteNaves.estagio(nv);txt(g,troca?"+ NOVO ESTAGIO DA NAVE":"+ MOTOR E TIRO MAIS FORTES",310,138,new Color(110,230,130));
+     txt(g,(nv+1)%2==0?"+1 CASCO":nv+1==6?"+1 DANO":"+ VELOCIDADE",310,151,new Color(110,230,130));txt(g,"CR "+preco,310,174,preco>inv.saldo()?new Color(240,100,100):OURO);txt(g,"ESPACO: COMPRAR",310,190,AZUL);}
+    txt(g,"ITEM DO SETOR: ATE O NV "+(nv<=2?2:nv<=5?5:8),310,204,CINZA);txt(g,"CADA NAVE EVOLUI SEPARADA",310,217,CINZA);txt(g,"COMPRA NAO SE PERDE",310,232,AZUL);
+   }else if(e==4){
+    String[] nomes={"CANHAO CRIOGENICO","LANCA-CHAMAS","AMULETO DO METAL GOD","REATOR DE CONVERGENCIA","SUBTANQUE"};int[] prod={1,2,0,4,5},ic={6,7,5,8,0};
+    String[] bom={"Arma de gelo (Q): congela","Arma de fogo (E): queima","Protege gelo e fogo","Gelo + fogo = LASER (V)","Reserva de casco (R)"};
+    String[] info={"Nivel "+inv.gelo()+"/3: superaquece","Nivel "+inv.fogo()+"/3: superaquece",inv.retencao()?"Cargas: "+inv.cargasAmuleto()+"/3":"Segura 3 golpes e quebra","Com poder equipado: FUSAO","Tanques: "+inv.quantidadeTanques()+"/4, chega vazio"};
+    for(int i=0;i<5;i++){int y=102+i*27,preco=inv.preco(prod[i]);box(g,12,y,282,25,cursor==i);if(i>3||!especial(g,i,15,y+1,23))Arte098.item(g,ic[i],15,y+1,23);
+     txtCabe(g,nomes[i]+(prod[i]<3&&prod[i]>0?" NV "+(prod[i]==1?inv.gelo():inv.fogo()):prod[i]==5?" "+inv.quantidadeTanques()+"/4":""),42,y+11,240,Color.WHITE);txt(g,preco==0?(i==2?"ATIVO: "+inv.cargasAmuleto()+"/3 CARGAS":"ADQUIRIDO / MAXIMO"):"CR "+preco,42,y+21,preco==0?VERDE:preco>inv.saldo()?VERM:OURO);}
+    box(g,302,102,164,137,false);int c=Math.min(4,cursor);if(c>3||!especial(g,c,310,108,40))Arte098.item(g,ic[c],310,108,40);txtCabe(g,nomes[c],356,118,104,OURO);txt(g,"SERVE EM TODAS",356,131,CINZA);
+    txt(g,"+ "+bom[c],310,161,VERDE);txt(g,info[c],310,174,CINZA);txt(g,inv.preco(prod[c])==0?"JA ADQUIRIDO":"ESPACO: COMPRAR",310,190,AZUL);
+    txt(g,c==4?"REPARO QUE SOBRA ENCHE":c==3?"CADA CHEFE MUDA O DISPARO":c==2?"QUEBRA: COMPRE DE NOVO":"ATIRE EM RAJADAS CURTAS",310,217,c==2?VERM:CINZA);txt(g,"COMPRAS SAO PERMANENTES",310,232,AZUL);
+   }else{
+   java.util.List<Pecas> lista=Pecas.doEncaixe(e,m);   for(int i=0;i<lista.size();i++){Pecas q=lista.get(i);int y=102+i*28;box(g,12,y,282,25,cursor==i);boolean tem=inv.temPeca(q.id),eq=inv.equipada(m,e)==q.id;
+    int ix=Pecas.temIcone(q.id)?42:20;Pecas.icone(g,q.id,16,y+1,23);
+    txtCabe(g,q.nome+(q.nave>=0?"  EXCLUSIVA":""),ix,y+11,262-ix,q.nave>=0?OURO:Color.WHITE);
+    txt(g,eq?"EQUIPADA":tem?"COMPRADA":"CR "+q.preco,ix,y+21,eq?VERDE:tem?AZUL:q.preco>inv.saldo()?VERM:OURO);}
+   box(g,302,102,164,137,false);
+   if(cursor<lista.size()){Pecas q=lista.get(cursor);boolean ic=Pecas.temIcone(q.id);if(ic)Pecas.icone(g,q.id,310,108,40);int tx=ic?356:310;txtCabe(g,q.nome,tx,118,460-tx,OURO);txt(g,q.nave>=0?"SO "+NAVES[q.nave]:"SERVE EM TODAS",tx,131,CINZA);
+    txt(g,"+ "+q.bom,310,161,VERDE);txt(g,"- "+q.ruim,310,174,VERM);
+    boolean tem=inv.temPeca(q.id),eq=inv.equipada(m,e)==q.id;txt(g,eq?"ESPACO: DESEQUIPAR":tem?"ESPACO: EQUIPAR":"ESPACO: COMPRAR",310,190,AZUL);}
+   txt(g,"NAVE ATUAL",310,204,CINZA);txt(g,"DANO "+nave.danoBalistico()+"  CASCO "+nave.getVidaMaxima(),310,217,Color.WHITE);txt(g,"COMPRAS SAO PERMANENTES",310,232,AZUL);
+   }
+  }else if(aba==6){
+   // contrato atual e arquivo: o que falhou ou expirou nao volta, pegue outro na base
+   Contrato c=contratoAtivo;int xp=ProgressoJogo.xp(),p=Contrato.patente(xp);
+   box(g,12,56,454,86,false);txt(g,"CONTRATO ATUAL",22,70,OURO);txtDir(g,"PATENTE "+Contrato.PATENTES[p]+"  XP "+xp,456,70,AZUL);
+   if(c==null){txt(g,"NENHUM CONTRATO ATIVO",22,92,Color.WHITE);txt(g,"PEGUE UM NO QUADRO DE MISSOES DA BASE ALIADA",22,108,CINZA);}
+   else{txtCabe(g,c.titulo,22,90,430,Color.WHITE);txtCabe(g,c.descricao(),22,104,430,CINZA);txtCabe(g,c.hud(),22,118,430,new Color(110,230,130));txt(g,"PREMIO CR "+c.premioCR+"  XP "+c.premioXP+(c.tipo==Contrato.Tipo.CACADA?" + RELIQUIA":""),22,134,OURO);}
+   box(g,12,148,454,94,false);txt(g,"ARQUIVO",22,162,OURO);
+   if(arquivo.isEmpty())txt(g,"VAZIO",22,180,CINZA);
+   for(int i=0;i<Math.min(5,arquivo.size());i++){Contrato a=arquivo.get(i);int y=178+i*13;txtCabe(g,a.titulo,22,y,150,Color.WHITE);
+    txt(g,a.cumprido?"CUMPRIDO":"EXPIRADO",180,y,a.cumprido?new Color(110,230,130):new Color(240,100,100));txtCabe(g,a.cumprido?"+"+a.premioCR+" CR":a.motivo,262,y,196,CINZA);}
+   txt(g,"CONTRATO FALHO NAO VOLTA: A BASE SORTEIA OUTROS",12,256,AZUL);
+  }else if(aba==5){String[] linhas={"ENTER / ESC: RETOMAR VOO","M: VOLTAR AO MENU INICIAL","F8: LABORATORIO DE TESTES","F9: OPCOES (AUDIO, JOGO, CONTROLES)","COMPRAS SALVAS AUTOMATICAMENTE","ROTA LIVRE: ESCOLHA O SETOR NO MAPA"};box(g,12,56,454,183,false);for(int i=0;i<linhas.length;i++)txt(g,linhas[i],30,82+i*28,i%2==0?Color.WHITE:OURO);}
+  if(aviso!=null&&!aviso.isEmpty())txt(g,aviso.substring(0,Math.min(69,aviso.length())),12,267,OURO);txt(g,aba==4?"< >: ENCAIXE  CIMA/BAIXO: ITEM  ESPACO: COMPRAR / EQUIPAR  TAB: ABA  ENTER: VOLTAR":aba==0?"C: USAR  X: TROCAR  1-8: ESCOLHER  ESPACO: EQUIPAR  TAB: ABA  ENTER: VOLTAR":"TAB: ABA  SETAS: SELECAO  ESPACO: CONFIRMAR  ENTER: VOLTAR",12,285,CINZA);g.dispose();tela.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);tela.drawImage(b,0,0,960,600,null);
+ }
+}

@@ -1,0 +1,14 @@
+bin/
+*.mp4
+referencias_naves/
+base_*.png
+mercado.png
+pecas.png
+especiais.png
+fusoes.png
+carga.png
+native_blood.png
+
+# musicas das bandas: arquivos locais do jogador, nunca no repositorio
+musicas/
+*.zip
