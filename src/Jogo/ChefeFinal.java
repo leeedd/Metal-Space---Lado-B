@@ -35,7 +35,7 @@ final class ChefeFinal {
     private static final BufferedImage LUA = ler("lua_cheia.png");
     private static boolean gemeos() { return GEMEOS_KF != null && GEMEOS_DANCA != null; }
     private double danca, moon, horda, lobos, luaT; private int levas;
-    /** Beelzeboss (4 quadros: guitarra em estrela, preparando, riff de fogo, na bateria 666). Sem a arte, usa a linha do demonio da grade. */
+    /** Arte antiga do Belzebu (fallback; as folhas novas belzebu_*.png tem prioridade). */
     private static final BufferedImage BELZEBU_ARTE = ler("belzebu.png");
     /** Moldura da barra de vida (faixa preta da vida e dois escudos para as almas dos gemeos). */
     private static final BufferedImage BARRA = ler("barra_chefe_final.png");
@@ -95,6 +95,7 @@ final class ChefeFinal {
         faiscaCorrente = Math.max(0, faiscaCorrente - dt);
         if (transicao > 0) { transicao = Math.max(0, transicao - dt); gancho = 0; raio = cargaRaio = demonio = avisoDemonio = 0; return; }
         if (rio > 0) { rio(dt, naveX, naveY, tiros); return; }
+        if (belzMorte > 0) { if (belzMorte == BZ_MORTE) { tiros.clear(); SomJogo.tocar(SomJogo.Efeito.EXPLOSAO_GRANDE); } belzMorte = Math.max(0, belzMorte - dt); if (belzMorte == 0) { aviso = "O TRONO DESPERTA: ZAREF, O TEMPLARIO DO INFERNO!"; proximo(ZAREF, vidaZaref, 3.0); } return; } // o Belzebu desaba em cinzas
         int t = TAM[ato];
         double alvoX = W - t - (ato == BELZEBU ? (BELZEBU_ARTE != null ? 110 : 20) : 40);
         if (entrada < 1 && ato == MONGE && emDupla()) { // a lua levanta os ossos: os gemeos se remontam onde cairam
@@ -325,49 +326,51 @@ final class ChefeFinal {
     }
 
     // ---------------- ato III: Belzebu ----------------
+    // Belzebu, o arauto baterista: alterna bateria (parado a direita), guitarra (a bateria some) e canto (anda pela tela)
+    private static final BufferedImage BZ_BAT = ler("belzebu_bateria.png"), BZ_GUI = ler("belzebu_guitarra.png"), BZ_CAN = ler("belzebu_canto.png"), BZ_DER = ler("belzebu_derrota.png");
+    private static final int BZ_BATERIA = 0, BZ_GUITARRA = 1, BZ_CANTO = 2; private static final double BZ_MORTE = 2.6;
+    private int modoB; private double modoT, quadroB, troca, alvoBX, alvoBY, paradaB, belzMorte; private int passoB;
     private void belzebu(double dt, int naveX, int naveY, double cad, List<TiroChefe> tiros, boolean furia) {
-        int t = TAM[BELZEBU];
-        if (bateria > 0) {
-            // na bateria 666: cada batida do bumbo solta uma onda grave e os pratos saem girando como serra
-            bateria = Math.max(0, bateria - dt); batida -= dt;
-            if (batida <= 0 && tiros.size() < 50) {
-                batida = furia ? .38 : .5; gesto = .2;
-                double ox = x + t * .3, oy = y + t * .55, mira = Math.atan2(naveY + 18 - oy, naveX + 22 - ox);
-                tiros.add(new TiroChefe(ox, oy + (golpes % 2 == 0 ? -60 : 60), -300, 0, false, TiroChefe.ONDA_SOM, TiroChefe.Movimento.RETO));
-                for (int i = -1; i <= 1; i += 2) tiro(tiros, ox, oy - 80, mira + i * .25, 260, true, TiroChefe.PRATO, TiroChefe.Movimento.ARCO, null);
-                golpes++;
-            }
-            if (bateria == 0) intervalo = 1.2;
-            return;
+        int t = TAM[BELZEBU]; double nx = naveX + 22, ny = naveY + 18; modoT += dt; troca = Math.max(0, troca - dt);
+        double dur = modoB == BZ_BATERIA ? 7 : modoB == BZ_GUITARRA ? 6 : 8;
+        if (modoT > dur) { modoB = (modoB + 1) % 3; modoT = 0; passoB = 0; batida = .6; troca = .5; paradaB = 0; SomJogo.tocar(SomJogo.Efeito.EXPLOSAO); // fumaca na troca: a bateria some e volta
+            if (modoB == BZ_CANTO) { alvoBX = x; alvoBY = y; } }
+        if (modoB != BZ_CANTO) { // na bateria e na guitarra fica a direita, flutuando devagar
+            double alvo = Math.max(TOPO - 20, Math.min(TiroChefe.LAVA_Y - t + 10, ny - t * .55));
+            y += (alvo + Math.sin(tempo * 1.2) * 24 - y) * Math.min(1, dt * .8); x += (baseX + Math.sin(tempo * .7) * 16 - x) * Math.min(1, dt * 2); }
+        if (tiros.size() > 55) return;
+        double ox = x + t * .3, oy = y + t * .5;
+        if (modoB == BZ_BATERIA) { // cada tempo do compasso e um golpe: tambor, prato, tambor, bumbo de fogo
+            batida -= dt * cad; quadroB = batida > .2 ? 0 : quadroB;
+            if (batida <= 0) { batida = furia ? .42 : .55; int b = passoB++ % 4; quadroB = b == 1 ? 2 : b == 3 ? 3 : 1; SomJogo.tocar(b == 3 ? SomJogo.Efeito.BATERIA_FORTE : SomJogo.Efeito.BATERIA_MEDIA);
+                double mira = Math.atan2(ny - oy, nx - ox);
+                if (b == 0 || b == 2) tiros.add(new TiroChefe(ox, oy + (b == 0 ? -50 : 50), Math.cos(mira) * 300, Math.sin(mira) * 300, false, TiroChefe.ONDA_BUMBO, TiroChefe.Movimento.RETO)); // onda do bumbo
+                else if (b == 1) for (int i = -1; i <= 1; i += 2) tiro(tiros, ox, oy - 90, mira + i * .3, 270, true, TiroChefe.PRATO, TiroChefe.Movimento.ARCO, null); // pratos-serra
+                else for (int i = 0; i < (furia ? 7 : 5); i++) tiros.add(new TiroChefe(x + t * .1 - i * 40, TiroChefe.LAVA_Y - 10, -260 - i * 15, 0, true, TiroChefe.PISTA_FOGO, TiroChefe.Movimento.RETO)); } // bumbo de fogo: a lava corre pela margem
+        } else if (modoB == BZ_GUITARRA) { // riffs de fogo em rajada; no fim do solo ergue a guitarra e chove fogo
+            batida -= dt * cad;
+            if (modoT > dur - 1.4) { quadroB = 3; if (batida <= 0) { batida = .12; tiros.add(new TiroChefe(60 + Math.random() * (W - 120), TOPO - 10, -30, 120 + Math.random() * 80, false, TiroChefe.BOLA_FOGO, TiroChefe.Movimento.ARCO)); } }
+            else { quadroB = (int) (modoT * 8) % 2 == 0 ? 0 : 1;
+                if (batida <= 0) { batida = furia ? .75 : 1.0; quadroB = 2; double mira = Math.atan2(ny - oy, nx - ox); for (int i = -2; i <= 2; i++) tiro(tiros, ox - 40, oy - 30, mira + i * .14, 380, false, TiroChefe.RIFF, TiroChefe.Movimento.ONDA, null); } }
+        } else { // canto: vai de ponto em ponto pela tela; em cada parada inspira, grita e berra
+            if (paradaB <= 0) { double d = Math.hypot(alvoBX - x, alvoBY - y); if (d < 8) { paradaB = 2.0; passoB = 0; } else { double v = Math.min(d, 520 * dt); x += (alvoBX - x) / d * v; y += (alvoBY - y) / d * v; quadroB = 0; } }
+            else { double antes = paradaB; paradaB -= dt; double e = 2.0 - paradaB;
+                quadroB = e < .5 ? 0 : e < 1.1 ? 1 : e < 1.6 ? 2 : 3;
+                if (antes > 1.5 && paradaB <= 1.5) { double mira = Math.atan2(ny - (y + t * .3), nx - (x + t * .25)); for (int i = -1; i <= 1; i++) tiro(tiros, x + t * .2, y + t * .3, mira + i * .28, 300, true, TiroChefe.GRITO, TiroChefe.Movimento.RETO, null); SomJogo.tocar(SomJogo.Efeito.TROVAO); }
+                if (antes > .4 && paradaB <= .4) for (int i = 0; i < (furia ? 14 : 10); i++) tiro(tiros, x + t * .4, y + t * .35, i * Math.PI * 2 / (furia ? 14 : 10) + tempo, 220, false, TiroChefe.GRITO, TiroChefe.Movimento.RETO, null); // berro: onda em volta
+                if (paradaB <= 0) { // proxima parada: as vezes em cima da nave, as vezes num canto
+                    boolean perto = Math.random() < .45; alvoBX = perto ? Math.max(40, Math.min(W - t, nx + 160)) : W * .35 + Math.random() * (W * .65 - t); alvoBY = perto ? Math.max(TOPO - 20, Math.min(TiroChefe.LAVA_Y - t + 20, ny - t * .5)) : TOPO - 20 + Math.random() * (TiroChefe.LAVA_Y - t - TOPO + 40); } }
         }
-        if (investida > 0) {
-            // avanca ate o ponto travado e volta: ha tempo de sair da frente durante o aviso
-            investida = Math.max(0, investida - dt);
-            double p = investida > 1.1 ? 0 : 1 - investida / 1.1, arco = Math.sin(p * Math.PI);
-            x = baseX + (alvoInvX - baseX) * arco; y += (alvoInvY - y) * Math.min(1, dt * 4) * arco;
-            return;
-        }
-        double alvo = Math.max(TOPO - 20, Math.min(H - t + 20, naveY + 18 - t * .5));
-        y += (alvo + Math.sin(tempo * 1.2) * 30 - y) * Math.min(1, dt * .9);
-        x += (baseX + Math.sin(tempo * .7) * 20 - x) * Math.min(1, dt * 2);
-        intervalo -= dt * cad;
-        if (intervalo > 0 || tiros.size() > 50) return;
-        golpes++; gesto = .55;
-        double ox = x + t * .45, oy = y + t * .4;
-        int g = golpes % 4;
-        if (g == 3) { bateria = furia ? 2.4 : 2.0; batida = .3; return; }
-        if (g == 1) {
-            // espiral de fogo do peito
-            int n = furia ? 16 : 12;
-            for (int i = 0; i < n; i++) tiro(tiros, ox, oy, tempo + i * Math.PI * 2 / n, 200, true, TiroChefe.FOGO_ROXO, TiroChefe.Movimento.ONDA, null);
-        } else if (g == 2) {
-            // chuva de brasas caindo em arco sobre a nave
-            for (int i = 0; i < (furia ? 9 : 7); i++) tiros.add(new TiroChefe(naveX - 160 + i * 55, TOPO - 10, -40, 80 + i % 3 * 30, false, TiroChefe.ENERGIA, TiroChefe.Movimento.ARCO).comCor(new Color(255, 90, 30)));
-        } else {
-            investida = 1.1 + .55; alvoInvX = Math.max(-60, naveX - t * .35); alvoInvY = Math.max(TOPO - 20, Math.min(H - t + 20, naveY + 18 - t * .5));
-            SomJogo.tocar(SomJogo.Efeito.CHEFE_ENTRADA);
-        }
-        intervalo = furia ? 1.3 : 1.7;
+    }
+    /** Desenho do Belzebu com as folhas novas, na mesma escala (a bateria e a referencia). */
+    private void desenharBelzebu(Graphics2D g) {
+        int t = TAM[BELZEBU]; BufferedImage f; int q;
+        if (belzMorte > 0) { f = BZ_DER; double e = 1 - belzMorte / BZ_MORTE; q = Math.min(3, (int) (e * 4)); }
+        else { f = modoB == BZ_BATERIA ? BZ_BAT : modoB == BZ_GUITARRA ? BZ_GUI : BZ_CAN; q = (int) quadroB; }
+        double esc = t * 1.05 / BZ_BAT.getHeight(); int fw = f.getWidth() / 4, fh = f.getHeight(), w = (int) (fw * esc), h = (int) (fh * esc), cx = (int) (x + t / 2.0), base = (int) (y + t);
+        Graphics2D a = (Graphics2D) g.create(); if (belzMorte > 0 && belzMorte < .6) a.setComposite(AlphaComposite.SrcOver.derive((float) (belzMorte / .6)));
+        a.drawImage(f, cx - w / 2, base - h, cx + w / 2, base, q * fw, 0, q * fw + fw, fh, null); a.dispose();
+        if (troca > 0) { java.util.Random r = new java.util.Random(9); float al = (float) (troca / .5); for (int k = 0; k < 18; k++) { int rr = 30 + r.nextInt(50); g.setColor(new Color(90, 70, 70, (int) (180 * al))); g.fillOval(cx - 150 + r.nextInt(300) - rr / 2, base - 40 - r.nextInt(200) - rr / 2, rr, rr); } } // fumaca da troca
     }
     private boolean avisandoInvestida() { return ato == BELZEBU && investida > 1.1 || ato == ZAREF && investida > .8; }
 
@@ -507,7 +510,7 @@ final class ChefeFinal {
 
     // ---------------- dano e colisao ----------------
     boolean colide(Rectangle r) {
-        if (rio > 0) return false;
+        if (rio > 0 || belzMorte > 0) return false;
         if (emDupla() && transicao <= 0 && entrada >= 1) {
             if (lobisomens()) { for (int i = 0; i < 2; i++) if (vivo(i) && r.intersects(lobo(i))) { alvoIrmao = i; return true; } return false; }
             for (int i = 0; i < 2; i++) if (vivo(i) && r.intersects(caixaIrmao(i))) { alvoIrmao = i; return true; } return false;
@@ -516,7 +519,7 @@ final class ChefeFinal {
         return r.intersects(getBounds());
     }
     boolean receberDano(int dano) {
-        if (rio > 0) return false;
+        if (rio > 0 || belzMorte > 0) return false;
         if (entrada < 1 || transicao > 0) { acertouCorrente = false; return false; }
         if (acertouCorrente) {
             acertouCorrente = false; faiscaCorrente = .12;
@@ -536,7 +539,7 @@ final class ChefeFinal {
         SomJogo.tocar(SomJogo.Efeito.EXPLOSAO_GRANDE);
         if (ato == BARDO) { dentes = 0; aviso = gemeos() ? "OS IRMAOS OSSADA COMECAM A DANCA MACABRA!" : "BARDO CAIU!"; proximo(MONGE, vidaMonge, 2.2); }
         else if (ato == MONGE) { dentes = 2; for (int i = 0; i < 2; i++) { double[] o = irmao(i); almaX[i] = o[0]; almaY[i] = o[1]; } aviso = "AS ALMAS DOS IRMAOS OSSADA SE FUNDEM!"; proximo(BELZEBU, vidaBelzebu, INVOCACAO); }
-        else if (ato == BELZEBU) { aviso = "O DEMONIO SE REVELA: ZAREF, O MAGO DOS PRISMAS!"; proximo(ZAREF, vidaZaref, 3.0); }
+        else if (ato == BELZEBU) { if (BZ_DER != null) { belzMorte = BZ_MORTE; return false; } aviso = "O TRONO DESPERTA: ZAREF, O TEMPLARIO DO INFERNO!"; proximo(ZAREF, vidaZaref, 3.0); }
         else { aviso = "ZAREF VIRA O DEMONIO DAS CORRENTES!"; proximo(CORRENTES, vidaCorrentes, 3.2); }
         return false;
     }
@@ -607,7 +610,7 @@ final class ChefeFinal {
     boolean estaVivo() { return ato != CORRENTES || vida > 0; }
     int getVida() { return vida; }
     int getVidaMaxima() { return ato == BARDO ? vidaBardo : ato == MONGE ? vidaMonge : ato == BELZEBU ? vidaBelzebu : ato == ZAREF ? vidaZaref : vidaCorrentes; }
-    String getNome() { if (rio > 0) return rio < RIO_DUR * .3 ? "O BELZEBU SE APROXIMA..." : "RIO DE LAVA"; return emDupla() ? (ato == BARDO ? "IRMAOS OSSADA - KUNG FU E KARATE" : "IRMAOS OSSADA - DANCA MACABRA") : ato == BARDO ? "OSSADA VERDE - IRMAOS OSSADA" : ato == MONGE ? "OSSADA ROXO - IRMAOS OSSADA" : ato == BELZEBU ? "BELZEBU" : ato == ZAREF ? "ZAREF, O MAGO DOS PRISMAS" : "O DEMONIO DAS CORRENTES"; }
+    String getNome() { if (rio > 0) return rio < RIO_DUR * .3 ? "O BELZEBU SE APROXIMA..." : "RIO DE LAVA"; return emDupla() ? (ato == BARDO ? "IRMAOS OSSADA - KUNG FU E KARATE" : "IRMAOS OSSADA - DANCA MACABRA") : ato == BARDO ? "OSSADA VERDE - IRMAOS OSSADA" : ato == MONGE ? "OSSADA ROXO - IRMAOS OSSADA" : ato == BELZEBU ? "BELZEBU" : ato == ZAREF ? "ZAREF, O TEMPLARIO DO INFERNO" : "O DEMONIO DAS CORRENTES"; }
     Rectangle getBounds() {
         int t = TAM[ato];
         if (ato == BELZEBU || ato == CORRENTES) return new Rectangle((int) (x + t * .22), (int) (y + t * .12), (int) (t * .56), (int) (t * .78));
@@ -619,6 +622,7 @@ final class ChefeFinal {
     }
     boolean tocaNave(Rectangle nave) {
         if (inferno() && nave.y + nave.height > TiroChefe.LAVA_Y + 14) return true; // encostou na lava
+        if (belzMorte > 0) return false;
         if (rio > 0) { for (Respingo r : respingos) if (r.t > RESP_AVISO && nave.intersects(r.caixa())) return true; return false; }
         if (transicao > 0 || entrada < 1) return false;
         if (ato == ZAREF && noRaio(nave.getCenterX(), nave.getCenterY())) return true;
@@ -644,6 +648,7 @@ final class ChefeFinal {
             if (avisandoInvestida()) { int t = TAM[ato]; g.setColor(new Color(255, 40, 20, (int) (90 + 80 * Math.sin(tempo * 30)))); g.setStroke(new BasicStroke(3)); g.drawLine((int) (x + t * .4), (int) (y + t * .5), (int) alvoInvX + 60, (int) alvoInvY + t / 2); }
             if (ato == MONGE && loboT > 0) desenharLobos(g); else
             if (ato == MONGE && emDupla() && entrada < 1) { if (renascer != null) for (Queda r : renascer) { r.t = .3 + (1 - entrada) * 1.7; desenharQueda(g, r); } } // ossos subindo e se encaixando
+            else if (ato == BELZEBU && BZ_BAT != null) desenharBelzebu(g);
             else corpo(g, ato, q, x, y + (q == 3 && ato != CORRENTES ? 4 : 0), TAM[ato], 1f);
             if (ato == ZAREF) {
                 if (cargaRaio > 0) { int r = (int) (10 + (1 - cargaRaio) * 28 + Math.sin(tempo * 40) * 3); g.setColor(Color.getHSBColor((float) (tempo * 2 % 1), .8f, 1f)); g.fillOval((int) raioX() - r, (int) raioY() - r, r * 2, r * 2); }
@@ -700,17 +705,15 @@ final class ChefeFinal {
             if ((int) (tempo * 20) % 2 == 0) corpo(g, ant, 3, W - TAM[ant] - 40, TOPO + (H - TOPO - TAM[ant]) / 2.0, TAM[ant], a);
         }
         if (ato == ZAREF) {
-            // clarao arco-iris: o demonio vira o Zaref
-            float a = (float) Math.min(1, p * 1.6);
-            if (p < .6) corpo(g, BELZEBU, 0, W - TAM[BELZEBU] - 20, TOPO + (H - TOPO - TAM[BELZEBU]) / 2.0, TAM[BELZEBU], 1f - a * .9f);
+            // o trono desperta: aneis de fogo e o Templario surge
             if (p > .4) corpo(g, ZAREF, 0, W - TAM[ZAREF] - 40, TOPO + (H - TOPO - TAM[ZAREF]) / 2.0, TAM[ZAREF], (float) Math.min(1, (p - .4) / .4));
-            // aneis do arco-iris abrindo a partir do peito do demonio
+            // aneis de fogo abrindo
             int cx = W - TAM[BELZEBU] / 2 - 20, cy = TOPO + (H - TOPO) / 2;
             g.setStroke(new BasicStroke(5));
             for (int k = 0; k < 6; k++) {
                 double r = (p * 1.4 - k * .08) * 520; if (r <= 0) continue;
                 float al = (float) Math.max(0, Math.min(.8, 1 - r / 520));
-                Color c = Color.getHSBColor(k / 6f, .85f, 1f);
+                Color c = k % 2 == 0 ? new Color(255, 120 + k * 15, 30) : new Color(200, 20, 10);
                 g.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), (int) (255 * al)));
                 g.drawOval(cx - (int) r, cy - (int) r, (int) r * 2, (int) r * 2);
             }

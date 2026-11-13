@@ -28,8 +28,10 @@ public final class TesteFinal099 {
   bater(f,ChefeFinal.MONGE);ok(c.getAtoFinalTeste()==ChefeFinal.BELZEBU&&c.getDentesTeste()==2,"as duas almas se fundem");
   tick(f,1.0);foto(f,"final_3a_almas");tick(f,1.3);foto(f,"final_3b_fusao");tick(f,2.0);foto(f,"final_3c_buraco_negro");tick(f,2.4);foto(f,"final_3d_engolido");tick(f,1.2);foto(f,"final_3e_dobra");tick(f,1.6);foto(f,"final_3f_espiral");tick(f,1.4);foto(f,"final_3g_inferno");tick(f,1.5);ok(c.receberDano(0)==false&&c.getNome().startsWith("RIO"),"rio de lava antes do Belzebu");tick(f,6);foto(f,"final_3h_rio");tick(f,10);foto(f,"final_3i_horda");tick(f,12);foto(f,"final_3j_bateria");tick(f,10);foto(f,"final_3k_chegando");tick(f,3.5);foto(f,"final_4_belzebu");
   ok(c.getVida()==c.getVidaMaxima(),"Belzebu com a vida cheia");
-  boolean bateria=false;for(int i=0;i<60*16&&!bateria;i++){f.getNave().curar(1000);f.getNave().teleportar(120,300);f.atualizarSimulacao(1.0/60);if((double)get(get(c,"fim"),"bateria")>0&&(double)get(get(c,"fim"),"bateria")<1.2){bateria=true;foto(f,"final_4b_bateria_666");}}
-  ok(bateria,"Beelzeboss toca a bateria 666");
+  boolean[] viu=new boolean[3];String[] nm={"final_4b_bateria","final_4c_guitarra","final_4d_canto"};Object fimB=get(c,"fim");
+  for(int i=0;i<60*26&&!(viu[0]&&viu[1]&&viu[2]);i++){f.getNave().curar(1000);f.getNave().teleportar(120,300);f.atualizarSimulacao(1.0/60);int m=(int)get(fimB,"modoB");double q=(double)get(fimB,"quadroB");
+   if(!viu[m]&&(m==0&&q==3||m==1&&q==2||m==2&&q==2)){viu[m]=true;foto(f,nm[m]);}}
+  ok(viu[0]&&viu[1]&&viu[2],"Belzebu alterna bateria, guitarra e canto");
   bater(f,ChefeFinal.BELZEBU);ok(c.getAtoFinalTeste()==ChefeFinal.ZAREF&&c.estaVivo(),"Belzebu vira o Zaref");
   tick(f,1.6);foto(f,"final_5_revelacao");tick(f,3);
   boolean raio=false,espada=false;
