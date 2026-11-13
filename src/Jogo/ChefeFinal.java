@@ -650,6 +650,7 @@ final class ChefeFinal {
         g.setColor(new Color(255, 230, 120)); for (int xx = 0; xx < W; xx += 6) g.fillRect(xx, ly - 2 + (int) (Math.sin(xx * .05 + tempo * 4) * 3), 6, 4); // a crista da lava
         if (batidaVisual > 0) { g.setColor(new Color(255, 40, 0, (int) (60 * batidaVisual * Math.min(1, (1 - rio / RIO_DUR) * 2)))); g.fillRect(0, TOPO, W, H - TOPO); } // cada batida pulsa a tela
     }
+    private static final BufferedImage PLATEIA_ARTE = ler("plateia_inferno.png"), DESTROCOS = ler("destrocos_naves.png");
     private static final BufferedImage FUNDO_ARTE = ler("inferno_fundo.png"), LAVA_ARTE = ler("inferno_lava.png");
     private static final BufferedImage RIO_ARTE = ler("inferno_rio_lava.png"), RESPINGO_ARTE = ler("respingo_lava.png");
     /** Naves de outros pilotos, escurecidas e avermelhadas: de longe, no inferno. */
@@ -668,6 +669,8 @@ final class ChefeFinal {
     }
     /** A plateia do inferno na margem: monstros batendo cabeca no ritmo, de mao chifrada pra cima. */
     private void desenharPlateia(Graphics2D g) {
+        if (PLATEIA_ARTE != null) { int fh = PLATEIA_ARTE.getHeight() / 4, ly = TiroChefe.LAVA_Y, h = 96, w = W, q = (int) (tempo * 2.3 * 4 * (1 + batidaVisual * .5)) % 4, off = (int) (tempo * 32) % w, y0 = ly + 8 - h; // a multidao batendo cabeca no ritmo
+            for (int xx = -off; xx < W; xx += w) g.drawImage(PLATEIA_ARTE, xx, y0, xx + w, y0 + h, 0, q * fh, PLATEIA_ARTE.getWidth(), q * fh + fh, null); return; }
         int ly = TiroChefe.LAVA_Y, per = W + 260; double bpm = 2.3, forca = 1 + batidaVisual * 1.5;
         java.util.Random r = new java.util.Random(77); Graphics2D a = (Graphics2D) g.create();
         for (int i = 0; i < 46; i++) { double esc = i % 7 == 3 ? 1.7 : i % 3 == 0 ? 1.25 : 1; int cor = r.nextInt(3); double fase = r.nextDouble() * .5, bx = Math.floorMod((int) (i * per / 46.0 - tempo * 32), per) - 130;
@@ -687,7 +690,8 @@ final class ChefeFinal {
         int ly = TiroChefe.LAVA_Y, per = W + 400;
         // destrocos fincados na margem, rolando com o fundo
         for (int k = 0; k < 4; k++) { double bx = Math.floorMod((int) (k * per / 4 + 120 - tempo * 25), per) - 200, by = ly - 18 - (k % 2) * 10, ang = k % 2 == 0 ? .55 : -.4;
-            for (int f = 0; f < 6; f++) { double fs = ((tempo * .5 + f / 6.0 + k * .13) % 1); g.setColor(new Color(60, 45, 45, (int) (150 * (1 - fs)))); int rr = (int) (10 + fs * 34); g.fillOval((int) (bx - 6 + fs * 30) - rr / 2, (int) (by - 20 - fs * 170) - rr / 2, rr, rr); } // coluna de fumaca
+            for (int f = 0; f < 6; f++) { double fs = ((tempo * .5 + f / 6.0 + k * .13) % 1); g.setColor(new Color(60, 45, 45, (int) (150 * (1 - fs)))); int rr = (int) (10 + fs * 34); g.fillOval((int) (bx - 60 + fs * 30) - rr / 2, (int) (ly - 120 - fs * 170) - rr / 2, rr, rr); } // coluna de fumaca
+            if (DESTROCOS != null) { int fw = DESTROCOS.getWidth() / 4, fh = DESTROCOS.getHeight(), dw = 250, dh = dw * fh / fw; g.drawImage(DESTROCOS, (int) bx - dw / 2, ly - 70 - dh, (int) bx + dw / 2, ly - 70, k * fw, 0, k * fw + fw, fh, null); continue; }
             naveLonge(g, k + 1, bx, by, 1.5, ang, k % 2 == 0);
             for (int f = 0; f < 3; f++) { int fh = 8 + (int) (Math.abs(Math.sin(tempo * 13 + f * 2 + k)) * 12); g.setColor(f == 1 ? new Color(255, 220, 90, 220) : new Color(255, 110, 20, 210)); g.fillPolygon(new int[]{(int) bx - 14 + f * 12, (int) bx - 8 + f * 12, (int) bx - 2 + f * 12}, new int[]{(int) by - 4, (int) by - 4 - fh, (int) by - 4}, 3); } } // fogo nos destrocos
         // a cada 5,5 s uma nave atravessa la no fundo, e acertada por fogo vindo do chao e cai na lava
