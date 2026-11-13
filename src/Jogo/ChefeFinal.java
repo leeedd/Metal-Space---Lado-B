@@ -668,8 +668,10 @@ final class ChefeFinal {
         Graphics2D a = (Graphics2D) g.create(); a.translate(cx, cy); a.rotate(ang); if (!praDireita) a.scale(-1, 1); a.drawImage(n, -w / 2, -h / 2, w, h, null); a.dispose();
     }
     /** A plateia do inferno na margem: monstros batendo cabeca no ritmo, de mao chifrada pra cima. */
+    private double plateiaX, plateiaT; // a plateia rola no rio e para na frente do Belzebu, como num show
     private void desenharPlateia(Graphics2D g) {
-        if (PLATEIA_ARTE != null) { int fh = PLATEIA_ARTE.getHeight() / 4, ly = TiroChefe.LAVA_Y, h = 110, w = W, q = (int) (tempo * 2.3 * 4 * (1 + batidaVisual * .5)) % 4, off = (int) (tempo * 32) % w, y0 = ly + 8 - h; // a multidao batendo cabeca no ritmo
+        double dtp = Math.max(0, Math.min(.1, tempo - plateiaT)); plateiaT = tempo; double vel = rio > 0 ? 32 : 32 * Math.max(0, 1 - (APRES_B - apresB) / 1.5); if (apresB <= 0 && rio <= 0) vel = 0; plateiaX += vel * dtp;
+        if (PLATEIA_ARTE != null) { int fh = PLATEIA_ARTE.getHeight() / 4, ly = TiroChefe.LAVA_Y, h = 110, w = W, q = (int) (tempo * 2.3 * 4 * (1 + batidaVisual * .5)) % 4, off = (int) plateiaX % w, y0 = ly + 8 - h; // a multidao batendo cabeca no ritmo
             for (int xx = -off; xx < W; xx += w) g.drawImage(PLATEIA_ARTE, xx, y0, xx + w, y0 + h, 0, q * fh, PLATEIA_ARTE.getWidth(), q * fh + fh, null); return; }
         int ly = TiroChefe.LAVA_Y, per = W + 260; double bpm = 2.3, forca = 1 + batidaVisual * 1.5;
         java.util.Random r = new java.util.Random(77); Graphics2D a = (Graphics2D) g.create();
