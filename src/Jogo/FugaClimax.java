@@ -68,9 +68,9 @@ final class FugaClimax {
     void desenhar(Graphics2D g, Nave nave, FugaCockpit cabine) {
         Graphics2D v = (Graphics2D) g.create(); double tr = tremor(); v.translate((rnd.nextDouble() - .5) * tr, (rnd.nextDouble() - .5) * tr);
         switch (estado) {
-            case SUBIDA: if (CL1 != null) imagem(v, CL1, 1 + e * .02); else { cenario(v); naveEm(v, nave, 260 + e * 60, 330 - e * 25, 1.4, -.12, 0); bolhas(v, 300 + e * 60, Math.min(1, e / DUR[SUBIDA])); } break;
+            case SUBIDA: if (CL1 != null) imagem(v, CL1, 1 + e * .02); else subida(v, nave); break;
             case PULO: if (CL2 != null) imagem(v, CL2, 1.05); else pulo(v, nave); break;
-            case AFUNDA: if (CL3 != null) { Graphics2D a = (Graphics2D) v.create(); a.translate(0, -e * 25); imagem(a, CL3, 1.05 + e * .03); a.dispose(); v.setColor(new Color(255, 80, 0, (int) (70 * e / DUR[AFUNDA]))); v.fillRect(0, 0, W, H); } else afunda(v, nave); break;
+            case AFUNDA: if (CL3 != null) { double k = e / DUR[AFUNDA]; Graphics2D a = (Graphics2D) v.create(); a.translate(0, -k * k * 60); imagem(a, CL3, 1.05 + k * .06); a.dispose(); lavaEm(v, (int) (H + 40 - k * k * 330)); } else afunda(v, nave); break; // a camera desce com a nave: a lava sobe por cima
             case FALHAS: case BOTAO: case APAGA: case RUPTURA: cabineAfundando(v, cabine); break;
             case PRETO: v.setColor(Color.BLACK); v.fillRect(-20, -20, W + 40, H + 40); break;
             case EXPLODE: if (CL4 != null) { imagem(v, CL4, 1.25 - Math.min(1, e / 1.2) * .25); } else explode(v, nave); flash(v, 1 - e / .5); break;
@@ -100,17 +100,50 @@ final class FugaClimax {
         if (GARG == null) { g.setColor(new Color(60, 55, 65)); g.fillOval((int) cx - w / 2, (int) cy - w / 2, w, w); return; }
         int fw = GARG.getWidth() / 4, fh = GARG.getHeight(), h = w * fh / fw; g.drawImage(GARG, (int) cx - w / 2, (int) cy - h / 2, (int) cx + w / 2, (int) cy + h / 2, q * fw, 0, q * fw + fw, fh, null);
     }
+    // a nave sobe de bico para cima (o cenario desce); a gargula vem de TRAS e de baixo, pula da lava e agarra a cauda
+    private static final double ANG = -.75; // bico para cima e para a frente
+    private double subY() { return estado == SUBIDA ? e * 70 : DUR[SUBIDA] * 70 + (estado == PULO ? e * 30 : 0); } // quanto o cenario ja desceu
+    private void cenarioSubindo(Graphics2D g, double desce) {
+        if (FUNDO != null) { int h = (int) (H * 1.2), w = FUNDO.getWidth() * h / FUNDO.getHeight(), y0 = -h + H + (int) Math.min(80, desce * .35), off = (int) (t * 20) % w; // o paredao desce devagar: a nave sobe
+            for (int x = -off; x < W; x += w) g.drawImage(FUNDO, x, y0, w, h, null); }
+        else { g.setColor(new Color(60, 10, 10)); g.fillRect(0, 0, W, H); }
+        g.setColor(new Color(255, 200, 120, 110)); Random r = new Random(4); for (int i = 0; i < 46; i++) { int x = r.nextInt(W), y = (int) ((r.nextInt(H) + t * 900) % H); g.fillRect(x, y, 2, 30); } // riscos de velocidade descendo
+    }
+    private void lavaEm(Graphics2D g, int y) { if (LAVA != null) { int fh = LAVA.getHeight() / 4, q = (int) (t * 6) % 4; g.drawImage(LAVA, 0, y - 50, W, Math.max(H + 300, y - 50 + fh), 0, q * fh, LAVA.getWidth(), q * fh + fh, null); } else { g.setColor(new Color(255, 120, 20)); g.fillRect(0, y, W, H + 300); } }
+    private static final double NX = 600, NY = 230, NE = 2.2; // a nave subindo, no alto e a direita
+    private void subida(Graphics2D g, Nave nave) {
+        double d = subY(); cenarioSubindo(g, d); int ly = 545 + (int) Math.min(30, d * .15); lavaEm(g, ly); // a lava ficando para tras, embaixo
+        naveEm(g, nave, NX + Math.sin(t * 2) * 10, NY + Math.sin(t * 3) * 8, NE, ANG, 0);
+        if (e > 1.2) bolhas(g, 330, Math.min(1, (e - 1.2) / 1.2)); // atras e embaixo da nave a lava comeca a inchar
+    }
+    private void gargulaVirada(Graphics2D g, double cx, double cy, int w, int q, double ang) { // a folha olha para a esquerda: espelha para olhar a nave (direita)
+        Graphics2D a = (Graphics2D) g.create(); a.translate(cx, cy); a.rotate(ang); a.scale(-1, 1); gargula(a, 0, 0, w, q); a.dispose();
+    }
     private void pulo(Graphics2D g, Nave nave) {
-        cenario(g); double k = Math.min(1, e / .6), kk = 1 - (1 - k) * (1 - k); double gy = H + 200 - kk * 480, sx = 470 + e * 30, sy = 300;
-        lava(g); gargula(g, sx + 150, gy, 560, e < .6 ? 3 : 0);
-        naveEm(g, nave, sx, sy + (k >= 1 ? Math.sin(t * 30) * 4 : 0), 1.4, -.12 + (k >= 1 ? .3 : 0), 0);
-        for (int i = 0; i < 26; i++) { double a = -Math.PI / 2 + (i - 13) * .1, d = kk * (200 + i * 9 % 80); g.setColor(i % 3 == 0 ? new Color(255, 230, 120) : new Color(255, 120, 20)); int r = 10 + i % 4 * 5; g.fillOval((int) (sx + 150 + Math.cos(a) * d), (int) (LY + Math.sin(a) * d + e * e * 260), r, r); } // a lava explode para cima
+        double d = subY(); cenarioSubindo(g, d); int ly = 575; double k = Math.min(1, e / .7), kk = 1 - (1 - k) * (1 - k);
+        double puxa = k >= 1 ? (e - .7) / (DUR[PULO] - .7) : 0, sx = NX - puxa * 40, sy = NY + puxa * 50; // agarrada: comeca a ser puxada para tras e para baixo
+        double gx = 250 + kk * 110, gy = ly + 280 - kk * 300; // de tras e de baixo, saltando da lava
+        lavaEm(g, ly); gargulaVirada(g, gx, gy, 520, k < 1 ? 3 : 0, -.4 * (1 - k) - .15);
+        double mx = gx + (sx - gx) * Math.min(1, e / .7), my = gy - 60 + (sy - gy + 60) * Math.min(1, e / .7); // a mao vem de tras ate a nave
+        braco(g, gx + 110, gy - 50, mx, my, false); naveEm(g, nave, sx + Math.sin(t * 30) * (k >= 1 ? 5 : 0), sy, NE, ANG + puxa * .5, 0); if (k >= 1) braco(g, gx + 110, gy - 50, sx, sy, true); // fechada em volta do corpo da nave
+        for (int i = 0; i < 26; i++) { double a = -Math.PI / 2 + (i - 13) * .1, dd = kk * (200 + i * 9 % 80); g.setColor(i % 3 == 0 ? new Color(255, 230, 120) : new Color(255, 120, 20)); int r = 10 + i % 4 * 5; g.fillOval((int) (gx + Math.cos(a) * dd), (int) (ly + Math.sin(a) * dd + e * e * 260), r, r); } // a lava explode atras da nave
+    }
+    /** Braco de pedra saindo da gargula; fechada = os dedos por cima do meio da nave. */
+    private void braco(Graphics2D g, double ox, double oy, double mx, double my, boolean fechada) {
+        Graphics2D a = (Graphics2D) g.create(); a.setStroke(new BasicStroke(1));
+        if (!fechada) { a.setColor(new Color(45, 40, 52)); a.setStroke(new BasicStroke(46, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)); a.drawLine((int) ox, (int) oy, (int) mx - 20, (int) my + 30);
+            a.setColor(new Color(255, 120, 30)); a.setStroke(new BasicStroke(3)); a.drawLine((int) ox + 10, (int) oy - 8, (int) mx - 30, (int) my + 18); a.dispose(); return; }
+        for (int i = 0; i < 4; i++) { int fx = (int) mx - 50 + i * 26, fy = (int) my - 30 + Math.abs(i - 1) * 6; a.setColor(new Color(45, 40, 52)); a.fillRoundRect(fx, fy, 30, 74, 18, 18); a.setColor(new Color(70, 64, 80)); a.fillRoundRect(fx + 4, fy + 4, 14, 30, 10, 10);
+            a.setColor(new Color(255, 120, 30)); a.drawLine(fx + 8, fy + 40, fx + 20, fy + 60); a.setColor(new Color(220, 210, 190)); a.fillPolygon(new int[]{fx + 6, fx + 24, fx + 15}, new int[]{fy + 70, fy + 70, fy + 92}, 3); } // os dedos e garras por cima do corpo da nave
+        a.dispose();
     }
     private void afunda(Graphics2D g, Nave nave) {
-        cenario(g); double k = e / DUR[AFUNDA], desce = k * k * 300, sx = 520, sy = 300 + desce;
-        gargula(g, sx + 150, H + 200 - 480 + desce, 560, 0); naveEm(g, nave, sx, sy + Math.sin(t * 34) * 5, 1.4, .3 + Math.sin(t * 20) * .1, 0);
+        double d = subY(); double k = e / DUR[AFUNDA], kk = k * k; cenarioSubindo(g, d); int ly = (int) (575 - kk * 300); // a camera acompanha para baixo: a lava sobe na tela
+        double sx = NX - 40 - k * 120, sy = NY + 50 + kk * 260, gx = 360 - k * 100, gy = 595 + kk * 200;
+        gargulaVirada(g, gx, gy, 520, 0, -.15);
+        braco(g, gx + 110, gy - 50, sx, sy, false); naveEm(g, nave, sx, sy + Math.sin(t * 34) * 5, NE, ANG + .5 + Math.sin(t * 20) * .1, 0); braco(g, gx + 110, gy - 50, sx, sy, true);
         for (int i = 0; i < 8; i++) { g.setColor(new Color(255, 220, 120)); int x = (int) sx - 30 + rnd.nextInt(80), y = (int) sy - 10 + rnd.nextInt(30); g.drawLine(x, y, x + rnd.nextInt(20) - 10, y - rnd.nextInt(20)); } // faiscas
-        lava(g); // a lava por cima: os dois afundam
+        lavaEm(g, ly); // a lava por cima: os dois afundam
     }
     private void explode(Graphics2D g, Nave nave) {
         cenario(g); lava(g); double k = Math.min(1, e / 1.0), cx = 480;
