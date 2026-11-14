@@ -20,7 +20,7 @@ final class FugaFinal {
     final int modelo; final FugaPista pista = new FugaPista(); final FugaCockpit cabine;
     // pilotagem
     double sx, sy = .1, potencia = .45, vel = 14, tempo, intro = INTRO;
-    boolean cima, baixo, esq, dir, acelera, desacelera, atirando; double manX, manY; // manX/manY: inclinacao do manche (-1 a 1), para as maos
+    boolean cima, baixo, esq, dir, acelera, desacelera, atirando, empurrando; double manX, manY; // empurrando: manche todo a frente (comando final); manX/manY: inclinacao do manche (-1 a 1), para as maos
     // armas
     int municao = 900, misseis = 10, bombas = 3; double calor, recargaMissil, cadencia, gatilho, polegar, chaveBomba;
     // escudo, temperatura, dobra, colapso

@@ -30,7 +30,13 @@ final class FugaCockpit {
         {new Color(78, 92, 52), new Color(52, 62, 34), new Color(150, 130, 70), new Color(120, 255, 90)},
         {new Color(26, 22, 22), new Color(12, 10, 10), new Color(210, 165, 50), new Color(255, 120, 40)}};
     private static final BufferedImage[] ARTE = new BufferedImage[5]; private static final BufferedImage MAOS = ler("maos_piloto.png");
-    static { for (int i = 0; i < 5; i++) ARTE[i] = ler("cockpit_" + i + ".png"); }
+    private static final int[][][] TELAS = new int[5][][]; // telas apagadas de cada painel: x, y, w, h, redonda
+    static { for (int i = 0; i < 5; i++) { ARTE[i] = ler("cockpit_" + i + ".png"); TELAS[i] = telas("cockpit_" + i + "_telas.txt"); } }
+    private static int[][] telas(String n) {
+        java.io.InputStream in = FugaCockpit.class.getResourceAsStream("/ImagemIcon/" + n); if (in == null) return null; java.util.List<int[]> l = new java.util.ArrayList<>();
+        try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.InputStreamReader(in))) { for (String s; (s = r.readLine()) != null; ) { String[] p = s.trim().split("\\s+"); if (p.length == 5) { int[] t = new int[5]; for (int i = 0; i < 5; i++) t[i] = Integer.parseInt(p[i]); l.add(t); } } } catch (Exception e) { return null; }
+        return l.toArray(new int[0][]);
+    }
     private final int modelo; private final Color metal, escuro, detalhe, luz;
     FugaCockpit(int modelo) { this.modelo = Math.floorMod(modelo, 5); Color[] p = PALETA[this.modelo]; metal = p[0]; escuro = p[1]; detalhe = p[2]; luz = p[3]; }
 
@@ -38,7 +44,7 @@ final class FugaCockpit {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
         vidro(g, f);
         if (ARTE[modelo] != null) g.drawImage(ARTE[modelo], 0, 0, W, H, null); else moldura(g, f);
-        instrumentos(g, f);
+        if (ARTE[modelo] != null && TELAS[modelo] != null) instrumentosArte(g, f); else instrumentos(g, f);
         maos(g, f);
         luzes(g, f);
         if (f.falaT > 0) texto(g, f.fala, 70, new Color(140, 255, 150));
@@ -94,6 +100,50 @@ final class FugaCockpit {
         g.setColor(luz); g.drawString("DOBRA " + (int) f.dobra + "%", bx, by + 150); barra(g, bx, by + 156, 88, "", f.dobra / 100, f.dobra >= 100 ? new Color(255, 255, 255) : new Color(200, 130, 255));
         if (f.travaArmas > 0) { g.setColor(new Color(255, 60, 40)); g.drawString("TRAVADO", bx + 20, by + 30); }
     }
+    /** Instrumentos dentro das telas da arte: radar na tela redonda grande, velocimetro na menor, potencia e mapa nas
+     *  verticais, diagnostico e armas nas retangulares. O que faltar no painel vai para um canto livre. */
+    private void instrumentosArte(Graphics2D g, FugaFinal f) {
+        g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 10));
+        java.util.List<int[]> red = new java.util.ArrayList<>(), alt = new java.util.ArrayList<>(), ret = new java.util.ArrayList<>();
+        for (int[] t : TELAS[modelo]) { if (t[4] == 1 && t[2] >= 60) red.add(t); else if (t[3] > t[2] * 1.5 && t[2] >= 25) alt.add(t); else if (t[2] > t[3]) ret.add(t); }
+        red.sort((a, b) -> b[2] - a[2]); alt.sort((a, b) -> a[0] - b[0]); ret.sort((a, b) -> a[1] - b[1]);
+        if (!red.isEmpty()) { int[] r = red.get(0); radar(g, f, r[0] + r[2] / 2, r[1] + r[3] / 2, r[2] / 2 - 2); }
+        String alti = String.format("%04dm", (int) ((FugaPista.LAVA - f.sy) * 180 + f.progresso() * 6000)); Color cv = f.vel > 40 ? new Color(255, 90, 60) : luz;
+        if (red.size() > 1) { int[] r = red.get(1); mostradorSemFundo(g, r[0] + r[2] / 2, r[1] + r[3] / 2, r[2] / 2 - 2, f.vel / 48, String.format("%03d", (int) (f.vel * 21)), cv, true); g.setColor(luz); g.drawString(alti, r[0] + r[2] / 2 - 16, r[1] + r[3] - 10); }
+        else if (modelo == 3) { mostradorSemFundo(g, 166, 446, 40, f.vel / 48, String.format("%03d", (int) (f.vel * 21)), cv, false); } // ponteiro no mostrador pintado da Berserker
+        if (modelo == 4 && alt.size() < 2) alt.add(0, new int[]{239, 390, 38, 154, 0}); // a grade estreita do Metal God vira a potencia
+        int[] pot = alt.size() > 1 ? alt.get(0) : null, map = alt.isEmpty() ? null : alt.get(alt.size() > 1 ? 1 : 0);
+        if (pot != null) { int ph = (int) ((pot[3] - 8) * f.potencia), pm = (int) ((pot[3] - 8) * f.potenciaMax()); g.setColor(new Color(255, 60, 40, 120)); g.fillRect(pot[0] + 4, pot[1] + 4, pot[2] - 8, pot[3] - 8 - pm); g.setColor(f.potencia > .85 ? new Color(255, 200, 60) : luz); g.fillRect(pot[0] + 4, pot[1] + pot[3] - 4 - ph, pot[2] - 8, ph); }
+        if (map != null) mapa(g, f, map[0], map[1], map[2], map[3]);
+        if (ret.size() > 0) diagnosticoCompacto(g, f, ret.get(0));
+        if (ret.size() > 1) armasCompactas(g, f, ret.get(1));
+        if (red.size() <= 1 && modelo != 3) { g.setColor(luz); g.drawString("VEL " + (int) (f.vel * 21) + "  ALT " + alti, 20, 600 - 8); }
+        if (modelo == 3) { g.setColor(new Color(0, 0, 0, 170)); g.fillRect(126, 488, 80, 14); g.setColor(luz); g.drawString("ALT " + alti, 130, 499); }
+    }
+    private void mostradorSemFundo(Graphics2D g, int cx, int cy, int r, double v, String valor, Color c, boolean marcas) {
+        if (marcas) for (int i = 0; i <= 10; i++) { double an = Math.PI * .75 + i * Math.PI * 1.5 / 10; g.setColor(i >= 8 ? new Color(255, 70, 50) : luz); g.drawLine(cx + (int) (Math.cos(an) * (r - 3)), cy + (int) (Math.sin(an) * (r - 3)), cx + (int) (Math.cos(an) * (r - 9)), cy + (int) (Math.sin(an) * (r - 9))); }
+        double an = Math.PI * .75 + Math.max(0, Math.min(1.05, v)) * Math.PI * 1.5; g.setColor(c); g.setStroke(new BasicStroke(3)); g.drawLine(cx, cy, cx + (int) (Math.cos(an) * (r - 7)), cy + (int) (Math.sin(an) * (r - 7))); g.setStroke(new BasicStroke(1));
+        if (marcas) { g.setColor(c); g.drawString(valor, cx - 10, cy + 18); }
+    }
+    private void diagnosticoCompacto(Graphics2D g, FugaFinal f, int[] r) {
+        int x = r[0], y = r[1], w = r[2], h = r[3]; double[] s = f.sist; boolean pisca = (int) (f.tempo * 6) % 2 == 0; int cx = x + 22, cy = y + h / 2, k = Math.max(1, h / 30);
+        g.setColor(cor(s[FugaFinal.ESCUDOS], pisca)); g.drawOval(cx - 16, cy - h / 2 + 3, 32, h - 6);
+        g.setColor(cor(s[FugaFinal.ARMAS], pisca)); g.fillPolygon(new int[]{cx - 3, cx - 14, cx - 14, cx - 3}, new int[]{cy, cy + 8 * k, cy + 11 * k, cy + 6 * k}, 4); g.fillPolygon(new int[]{cx + 3, cx + 14, cx + 14, cx + 3}, new int[]{cy, cy + 8 * k, cy + 11 * k, cy + 6 * k}, 4);
+        g.setColor(cor(s[FugaFinal.ESTRUTURA], pisca)); g.fillRect(cx - 3, cy - 8 * k, 6, 18 * k);
+        g.setColor(cor(s[FugaFinal.NAVEGACAO], pisca)); g.fillPolygon(new int[]{cx - 3, cx + 3, cx}, new int[]{cy - 8 * k, cy - 8 * k, cy - 15 * k}, 3);
+        g.setColor(cor(s[FugaFinal.RADAR], pisca)); g.fillRect(cx - 1, cy - 12 * k, 3, 3);
+        g.setColor(cor(s[FugaFinal.MOTORES], pisca)); g.fillRect(cx - 6, cy + 10 * k, 4, 4 * k); g.fillRect(cx + 2, cy + 10 * k, 4, 4 * k);
+        int col = (w - 50) / 2, lh = Math.max(10, (h - 6) / 3);
+        Font fo = g.getFont(); g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 9)); for (int i = 0; i < 6; i++) { g.setColor(cor(s[i], pisca)); g.drawString(FugaFinal.SISTEMAS[i].substring(0, 2) + " " + (int) s[i], x + 46 + (i / 3) * col, y + 12 + (i % 3) * lh); } g.setFont(fo);
+    }
+    private void armasCompactas(Graphics2D g, FugaFinal f, int[] r) {
+        int x = r[0] + 6, y = r[1], w = r[2] - 12, h = r[3], col = w / 2, lh = Math.max(10, (h - 6) / 3), bw = col - 12;
+        boolean curto = col < 75; String[] nome = curto ? new String[]{"C" + f.municao, "M" + f.misseis, "B" + f.bombas, "ES", "DB", "TP"} : new String[]{"CAN " + f.municao, "MIS " + f.misseis, "BOM " + f.bombas, "ESC", "DOB " + (int) f.dobra + "%", "TMP " + (int) f.temperatura};
+        double[] v = {1 - f.calor / 100, 1 - f.recargaMissil, f.bombas / 3.0, f.escudo / 100, f.dobra / 100, f.temperatura / 120};
+        Color[] c = {f.travaArmas > 0 ? new Color(255, 60, 40) : luz, luz, new Color(255, 90, 50), new Color(90, 200, 255), new Color(200, 130, 255), f.temperatura > 90 ? new Color(255, 60, 40) : new Color(255, 170, 40)};
+        Font fo = g.getFont(); g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 9)); int bx0 = curto ? 26 : bw / 2 + 6, bl = col - bx0 - 4;
+        for (int i = 0; i < 6; i++) { int xx = x + (i / 3) * col, yy = y + 4 + (i % 3) * lh; g.setColor(c[i]); g.drawString(nome[i], xx, yy + 9); g.setColor(new Color(20, 24, 20)); g.fillRect(xx + bx0, yy + 3, bl, 5); g.setColor(c[i]); g.fillRect(xx + bx0, yy + 3, (int) (bl * Math.max(0, Math.min(1, v[i]))), 5); } g.setFont(fo);
+    }
     private void visor(Graphics2D g, int x, int y, int w, int h) { g.setColor(new Color(8, 12, 8)); g.fillRoundRect(x, y, w, h, 6, 6); g.setColor(escuro.darker()); g.drawRoundRect(x, y, w, h, 6, 6); }
     private void barra(Graphics2D g, int x, int y, int w, String nome, double v, Color c) { g.setColor(new Color(20, 24, 20)); g.fillRect(x, y, w, 8); g.setColor(c); g.fillRect(x, y, (int) (w * Math.max(0, Math.min(1, v))), 8); if (!nome.isEmpty()) { g.setColor(Color.WHITE); g.drawString(nome, x, y + 20); } }
     private void mostrador(Graphics2D g, int cx, int cy, int r, double v, String nome, String valor, Color c) {
@@ -139,6 +189,11 @@ final class FugaCockpit {
     private static Color cor(double v, boolean pisca) { return v > 75 ? new Color(90, 230, 90) : v > 50 ? new Color(240, 220, 60) : v > 25 ? new Color(255, 140, 30) : pisca ? new Color(255, 40, 30) : new Color(120, 20, 15); }
     // ---------------- as maos: alavanca de potencia (esquerda) e manche (direita) ----------------
     private void maos(Graphics2D g, FugaFinal f) {
+        if (MAOS != null) { int c = MAOS.getWidth() / 6, t = 165;
+            int qe = f.chaveBomba > 0 ? 2 : f.acelera ? 1 : 0, ye = H - t + 30 - (int) (f.potencia * 24); // a mao esquerda sobe com a alavanca
+            g.drawImage(MAOS, 0, ye, t, ye + t, qe * c, 0, qe * c + c, c, null);
+            int qd = f.empurrando ? 5 : f.polegar > 0 ? 4 : f.gatilho > 0 ? 3 : f.manX < -.4 ? 1 : f.manX > .4 ? 2 : 0, xd = W - t + 6 + (int) (f.manX * 8), yd = H - t + 30 + (int) (f.manY * 8);
+            g.drawImage(MAOS, xd, yd, xd + t, yd + t, qd * c, c, qd * c + c, c * 2, null); return; }
         int lx = 236, ly = (int) (575 - 140 * f.potencia); // trilho da alavanca
         g.setColor(new Color(15, 15, 15)); g.fillRoundRect(lx - 5, 425, 10, 160, 6, 6);
         g.setColor(escuro.darker()); g.fillRect(lx - 3, ly, 6, 590 - ly); g.setColor(detalhe); g.fillRoundRect(lx - 16, ly - 12, 32, 22, 8, 8); // cabo da alavanca
@@ -164,7 +219,7 @@ final class FugaCockpit {
     }
     // ---------------- luzes de painel e alarme ----------------
     private void luzes(Graphics2D g, FugaFinal f) {
-        for (int i = 0; i < 12; i++) { boolean on = (int) (f.tempo * (3 + i % 4)) % 3 != 0; g.setColor(on ? (i % 5 == 0 ? new Color(255, 70, 50) : luz) : escuro.darker()); g.fillRect(330 + i * 24, PAINEL + 10, 12, 5); }
+        if (ARTE[modelo] == null) for (int i = 0; i < 12; i++) { boolean on = (int) (f.tempo * (3 + i % 4)) % 3 != 0; g.setColor(on ? (i % 5 == 0 ? new Color(255, 70, 50) : luz) : escuro.darker()); g.fillRect(330 + i * 24, PAINEL + 10, 12, 5); }
         if (f.alarme > 0 && (int) (f.tempo * 8) % 2 == 0) { g.setColor(new Color(255, 0, 0, 60)); g.fillRect(0, 0, W, H); g.setColor(new Color(255, 60, 40)); g.fillOval(20, PAINEL + 14, 16, 16); g.fillOval(W - 36, PAINEL + 14, 16, 16); }
         if (f.impacto > .3) { java.util.Random r = new java.util.Random((long) (f.tempo * 30)); g.setColor(new Color(255, 220, 120)); for (int i = 0; i < 14; i++) { int x = 300 + r.nextInt(380), y = PAINEL + r.nextInt(30); g.drawLine(x, y, x + r.nextInt(16) - 8, y - r.nextInt(18)); } } // faiscas no painel
     }
