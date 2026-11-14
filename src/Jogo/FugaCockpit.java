@@ -48,7 +48,7 @@ final class FugaCockpit {
         maos(g, f);
         luzes(g, f);
         if (f.falaT > 0) texto(g, f.fala, 70, new Color(140, 255, 150));
-        if (f.tempo < FugaFinal.INTRO + .7) { g.setColor(new Color(0, 0, 0, (int) (255 * Math.max(0, 1 - (f.tempo - FugaFinal.INTRO) / .7)))); g.fillRect(0, 0, W, H); } // entra na cabine
+        if (f.tempo < FugaFinal.INTRO + .7) { g.setColor(new Color(0, 0, 0, (int) (255 * Math.max(0, Math.min(1, 1 - (f.tempo - FugaFinal.INTRO) / .7))))); g.fillRect(0, 0, W, H); } // entra na cabine
     }
     // ---------------- vidro: rachaduras, reflexo e a mira ----------------
     private void vidro(Graphics2D g, FugaFinal f) {
@@ -193,7 +193,7 @@ final class FugaCockpit {
             int qe = f.chaveBomba > 0 ? 2 : f.acelera ? 1 : 0, ye = H - t + 30 - (int) (f.potencia * 24); // a mao esquerda sobe com a alavanca
             g.drawImage(MAOS, 0, ye, t, ye + t, qe * c, 0, qe * c + c, c, null);
             int qd = f.empurrando ? 5 : f.polegar > 0 ? 4 : f.gatilho > 0 ? 3 : f.manX < -.4 ? 1 : f.manX > .4 ? 2 : 0, xd = W - t + 6 + (int) (f.manX * 8), yd = H - t + 30 + (int) (f.manY * 8);
-            g.drawImage(MAOS, xd, yd, xd + t, yd + t, qd * c, c, qd * c + c, c * 2, null); return; }
+            if (!f.semMaoDireita) g.drawImage(MAOS, xd, yd, xd + t, yd + t, qd * c, c, qd * c + c, c * 2, null); return; }
         int lx = 236, ly = (int) (575 - 140 * f.potencia); // trilho da alavanca
         g.setColor(new Color(15, 15, 15)); g.fillRoundRect(lx - 5, 425, 10, 160, 6, 6);
         g.setColor(escuro.darker()); g.fillRect(lx - 3, ly, 6, 590 - ly); g.setColor(detalhe); g.fillRoundRect(lx - 16, ly - 12, 32, 22, 8, 8); // cabo da alavanca
@@ -203,7 +203,12 @@ final class FugaCockpit {
         int bx = 650, by = 600, tx = bx + (int) (f.manX * 46), ty = 478 + (int) (f.manY * 26);
         g.setColor(new Color(20, 20, 20)); g.fillOval(bx - 34, by - 18, 68, 36); g.setColor(escuro.darker()); g.setStroke(new BasicStroke(12)); g.drawLine(bx, by - 6, tx, ty + 20); g.setStroke(new BasicStroke(1));
         g.setColor(new Color(30, 30, 30)); g.fillRoundRect(tx - 16, ty - 20, 32, 46, 12, 12); g.setColor(f.polegar > 0 ? new Color(255, 70, 40) : new Color(140, 30, 20)); g.fillOval(tx - 6, ty - 26, 12, 9); // botao do missil
-        if (MAOS == null) { Graphics2D m = (Graphics2D) g.create(); m.translate(tx, ty); m.scale(1.9, 1.9); m.translate(-tx, -ty); luva(m, tx, ty, f.gatilho > 0, f.polegar > 0, false, false); m.dispose(); }
+        if (MAOS == null && !f.semMaoDireita) { Graphics2D m = (Graphics2D) g.create(); m.translate(tx, ty); m.scale(1.9, 1.9); m.translate(-tx, -ty); luva(m, tx, ty, f.gatilho > 0, f.polegar > 0, false, false); m.dispose(); }
+    }
+    /** Mao direita num quadro qualquer da folha (o soco no botao da dobra). */
+    void maoDireita(Graphics2D g, int q, int x, int y, int t) {
+        if (MAOS == null) { Graphics2D m = (Graphics2D) g.create(); m.translate(x + t / 2, y + t / 2); m.scale(1.9, 1.9); m.translate(-(x + t / 2), -(y + t / 2)); luva(m, x + t / 2, y + t / 2, false, false, false, false); m.dispose(); return; }
+        int c = MAOS.getWidth() / 6; g.drawImage(MAOS, x, y, x + t, y + t, q * c, c, q * c + c, c * 2, null);
     }
     /** Luva do piloto segurando um cabo (x, y = centro da pegada). */
     private void luva(Graphics2D g, int x, int y, boolean gatilho, boolean polegar, boolean chave, boolean esquerda) {
