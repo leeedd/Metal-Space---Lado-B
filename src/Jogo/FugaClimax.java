@@ -23,7 +23,7 @@ final class FugaClimax {
     static final int SUBIDA = 0, PULO = 1, AFUNDA = 2, FALHAS = 3, BOTAO = 4, APAGA = 5, PRETO = 6, EXPLODE = 7, RUMO = 8, PORTAL = 9, TUNEL = 10, RUPTURA = 11;
     static final double[] DUR = {2.6, 1.8, 2.4, 3.0, 5.0, 3.2, 3.0, 2.6, 2.4, 1.8, 8.0, 2.6};
     private static final int W = 960, H = 600, LY = 522;
-    private static final BufferedImage CL1 = ler("climax_1_subida.png"), CL2 = ler("climax_2_pulo.png"), CL3 = ler("climax_3_afunda.png"), CL4 = ler("climax_4_explosao.png"), DOBRA_EXT = ler("braco_3_dobra.png"),
+    private static final BufferedImage CL1 = ler("climax_1_subida.png"), CL2 = ler("climax_2_pulo.png"), CL2B = ler("climax_2b_agarra.png"), SOCO = ler("maos_soco.png"), CL3 = ler("climax_3_afunda.png"), CL4 = ler("climax_4_explosao.png"), DOBRA_EXT = ler("braco_3_dobra.png"),
         FUNDO = ler("inferno_fundo.png"), LAVA = ler("inferno_lava.png"), GARG = ler("demonio_gargula.png"), MAO = ler("gargula_mao.png"), TUNEL_ARTE = ler("hiperespaco_tunel.png");
     private final FugaFinal f; int estado = SUBIDA; double e, t; private double soco = -1; private final Random rnd = new Random(7);
     FugaClimax(FugaFinal f) { this.f = f; f.objsLimpar(); }
@@ -69,7 +69,7 @@ final class FugaClimax {
         Graphics2D v = (Graphics2D) g.create(); double tr = tremor(); v.translate((rnd.nextDouble() - .5) * tr, (rnd.nextDouble() - .5) * tr);
         switch (estado) {
             case SUBIDA: if (CL1 != null) imagem(v, CL1, 1 + e * .02); else subida(v, nave); break;
-            case PULO: if (CL2 != null) imagem(v, CL2, 1.05); else pulo(v, nave); break;
+            case PULO: if (CL2 != null) imagem(v, CL2B != null && e > 1.0 ? CL2B : CL2, 1.05 + e * .03); else pulo(v, nave); if (CL2 != null && e > 1.0 && e < 1.2) flash(v, (1.2 - e) / .2 * .6); break; // estica a mao... e agarra
             case AFUNDA: if (CL3 != null) { double k = e / DUR[AFUNDA]; Graphics2D a = (Graphics2D) v.create(); a.translate(0, -k * k * 60); imagem(a, CL3, 1.05 + k * .06); a.dispose(); lavaEm(v, (int) (H + 40 - k * k * 330)); } else afunda(v, nave); break; // a camera desce com a nave: a lava sobe por cima
             case FALHAS: case BOTAO: case APAGA: case RUPTURA: cabineAfundando(v, cabine); break;
             case PRETO: v.setColor(Color.BLACK); v.fillRect(-20, -20, W + 40, H + 40); break;
@@ -179,8 +179,8 @@ final class FugaClimax {
         lavaNoVidro(g, nivel);
         f.semMaoDireita = soco >= 0; cabine.desenhar(g, f);
         if (estado == FALHAS || estado == BOTAO) { if (rnd.nextDouble() < .35) { g.setColor(new Color(0, 0, 0, 170 + rnd.nextInt(80))); g.fillRect(0, 330 + rnd.nextInt(60), W, H); } if (rnd.nextDouble() < .15) { g.setColor(new Color(0, 0, 0, 200)); g.fillRect(0, 0, W, H); } } // luzes piscando, painel morrendo
-        if (estado == BOTAO || estado == APAGA) botao(g, cabine);
-        if (estado == APAGA) { double a = Math.min(1, e / .25); g.setColor(new Color(0, 0, 0, (int) (200 * a))); g.fillRect(0, 330, W, H); // o painel apaga de uma vez
+        if (estado == BOTAO) botao(g, cabine);
+        if (estado == APAGA) { double a = Math.min(1, e / .25); g.setColor(new Color(0, 0, 0, (int) (200 * a))); g.fillRect(0, 330, W, H); botao(g, cabine); // o painel apaga de uma vez; o punho continua no botao
             double fim = Math.max(0, (e - 1.6) / (DUR[APAGA] - 1.6)); g.setColor(new Color(0, 0, 0, (int) (255 * Math.min(1, fim)))); g.fillRect(-20, -20, W + 40, H + 40); } // a lava envolve tudo e vai esmaecendo
         if (estado == RUPTURA) { double k = e / DUR[RUPTURA]; g.setColor(new Color(255, 60, 20, (int) (160 * Math.min(1, k * 2)))); g.fillRect(0, 0, W, H); g.setColor(new Color(0, 0, 0, (int) (255 * Math.max(0, (k - .5) * 2)))); g.fillRect(-20, -20, W + 40, H + 40); }
     }
@@ -199,6 +199,13 @@ final class FugaClimax {
         int bx = 480, by = 555; double pulsa = .5 + .5 * Math.sin(t * 14);
         g.setColor(new Color(20, 20, 20)); g.fillOval(bx - 52, by - 24, 104, 48); for (int i = 0; i < 12; i++) { g.setColor(i % 2 == 0 ? new Color(240, 200, 30) : Color.BLACK); g.fillArc(bx - 48, by - 21, 96, 42, i * 30, 30); }
         boolean afundado = soco > .18; g.setColor(new Color(120, 0, 0)); g.fillOval(bx - 30, by - 14 + (afundado ? 6 : 0), 60, 26); g.setColor(new Color(230, 30 + (int) (60 * pulsa), 20)); g.fillOval(bx - 30, by - 22 + (afundado ? 8 : 0), 60, 26);
+        if (soco >= 0 && SOCO != null) { int fw = SOCO.getWidth() / 2, fh = SOCO.getHeight(), t0 = 200; // punho erguido, desce rapido e esmaga o botao
+            if (!afundado) { double k = Math.min(1, soco / .18); int x = (int) (W - 230 + (bx - 120 - (W - 230)) * k), y = (int) (H - 260 + (by - 210 - (H - 260)) * k * k);
+                if (k > .4) { g.setColor(new Color(255, 255, 255, 70)); for (int i = 1; i < 4; i++) g.drawImage(SOCO, x, y - i * 22, x + t0, y - i * 22 + t0, 0, 0, fw, fh, null); } // rastro da descida
+                g.drawImage(SOCO, x, y, x + t0, y + t0, 0, 0, fw, fh, null); }
+            else { int x = bx - (int) (t0 * .58), y = by - (int) (t0 * .84) + 6; g.setColor(new Color(214, 98, 22)); g.fillPolygon(new int[]{x + 2, x + 2, x - 90}, new int[]{y + (int) (t0 * .55), y + t0, y + t0 + 40}, 3); g.setColor(new Color(170, 70, 15)); g.drawLine(x - 60, y + t0 + 10, x + 2, y + (int) (t0 * .8)); // a manga continua ate a borda
+                g.drawImage(SOCO, x, y, x + t0, y + t0, fw, 0, fw * 2, fh, null); }
+            return; }
         if (soco >= 0) { double k = Math.min(1, soco / .18); int t0 = 190, x0 = W - 165 + 6, y0 = H - 135, x1 = bx - t0 / 2 + 10, y1 = by - t0 + 40 + (afundado ? 18 : 0); // a mao sai do manche e soca o botao
             cabine.maoDireita(g, 5, (int) (x0 + (x1 - x0) * k), (int) (y0 + (y1 - y0) * k), (int) (165 + (t0 - 165) * k));
             if (afundado && soco < .4) { g.setColor(new Color(255, 230, 120)); for (int i = 0; i < 10; i++) { double a = i * Math.PI / 5; g.drawLine(bx + (int) (Math.cos(a) * 40), by + (int) (Math.sin(a) * 20), bx + (int) (Math.cos(a) * 80), by + (int) (Math.sin(a) * 40)); } } }
