@@ -194,7 +194,7 @@ implements ActionListener {
     /** Fortaleza (depois do VanInferno): cada banda reunida, todos os integrantes juntos, uma fase por banda. */
     private boolean reuniao, reuniaoVencida; private int bandaReuniao; private double esperaReuniao;
     /** Luta final (depois da fortaleza): Irmaos Ossada, Belzebu e Zaref. */
-    private boolean finalVencido;
+    private boolean finalVencido, fugaVencida; private FugaFinal fuga; // fuga do buraco negro: entre o ultimo chefe e os creditos
     private void iniciarFinal() {
         itens.clear(); capsulas.clear(); alien.clear(); asteroides.clear(); tirosInimigos.clear(); tirosChefes.clear(); tirosElementais.clear(); nave.getMisseis().clear();
         reuniao = false; emVanInferno = false; miniChefe = null; base = null; cenaChefe = null;
@@ -958,6 +958,7 @@ implements ActionListener {
     protected void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);
         Graphics2D graphics2D = (Graphics2D)graphics.create();
+        if (fuga != null) { fuga.desenhar(graphics2D, nave); if (pausado) { graphics2D.setColor(new Color(0, 0, 0, 150)); graphics2D.fillRect(0, 0, 960, 600); graphics2D.setColor(Color.WHITE); graphics2D.drawString("PAUSA - ENTER PARA CONTINUAR", 380, 300); } graphics2D.dispose(); return; }
         graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         graphics2D.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         Graphics2D graphics2D2 = (Graphics2D)graphics2D.create();
@@ -1341,6 +1342,7 @@ implements ActionListener {
         if ((d = Math.min(0.045, Math.max(0.0, d))) == 0.0) {
             return;
         }
+        if (fuga != null) { if (!pausado) { fuga.atualizar(d); if (fuga.terminou) { fuga = null; fugaVencida = true; emJogo = true; etapa = Etapa.INTERLUDIO; tempoEtapa = 0; trofeuPendente = 0; atualizarTransicao(d); } } this.repaint(); return; }
         if (escolhendoSetor) { mapaEstelar.atualizar(d); this.repaint(); return; }
         if (naBase && !pausado) { this.repaint(); return; }
         if (viajando() && !pausado) {
@@ -1549,6 +1551,7 @@ implements ActionListener {
         if(chefesDerrotados==TOTAL_SETORES&&!van_infernoVencido){iniciarVanInferno();return;}
         if(chefesDerrotados==TOTAL_SETORES&&!reuniaoVencida){iniciarReuniao(0);return;}
         if(chefesDerrotados==TOTAL_SETORES&&!finalVencido){iniciarFinal();return;}
+        if(chefesDerrotados==TOTAL_SETORES&&!fugaVencida){iniciarFuga();return;}
         if(chefesDerrotados==TOTAL_SETORES){emJogo=false;venceu=true;etapa=Etapa.CREDITOS;cenaFinal=new CenaFinal(modeloVisual, ProgressoJogo.passesFestival());cenaFinal.nivelNave(nave.getNivel());MusicaJogo.trocarSeDisponivel("creditos");return;}
         this.itens.clear(); capsulas.clear();
         this.tempoAviso = 0.0;
@@ -2322,7 +2325,7 @@ implements ActionListener {
     private void reiniciar() {
         partidaTeste = false; painelTeste = false;
         emboscadaUsada = emboscadaPendente = intercepcao = false; tempoInterdicao = saidaIntercepcao = 0;
-        cenaDerrota=null;cenaChefe=null;empurraoNave=0;reuniao=false;reuniaoVencida=false;finalVencido=false;bandaReuniao=0;comando=new ComandoInimigo();radio.limpar();abatesSeguidos=0;avisouSangrando=false;if(contrato!=null){contrato.falhar("NAVE DESTRUIDA");arquivar(contrato);}contrato=null;quadroBase=false;emVanInferno=false;van_infernoVencido=false;douradoPerdido=0;hangarPendente=hangarAberto=false;esperaViagem=viagemIda=viagemVolta=-1;geloPressionado=false;fogoPressionado=false;
+        cenaDerrota=null;cenaChefe=null;empurraoNave=0;reuniao=false;reuniaoVencida=false;finalVencido=false;fugaVencida=false;fuga=null;bandaReuniao=0;comando=new ComandoInimigo();radio.limpar();abatesSeguidos=0;avisouSangrando=false;if(contrato!=null){contrato.falhar("NAVE DESTRUIDA");arquivar(contrato);}contrato=null;quadroBase=false;emVanInferno=false;van_infernoVencido=false;douradoPerdido=0;hangarPendente=hangarAberto=false;esperaViagem=viagemIda=viagemVolta=-1;geloPressionado=false;fogoPressionado=false;
         this.nave = new Nave();
         aplicarInventario();
         this.nave.ativarLendaria(this.usarLendaria && ProgressoJogo.lendariaDisponivel());
@@ -2510,6 +2513,9 @@ implements ActionListener {
     }
 
     java.util.List<TiroChefe> getTirosChefesTeste() { return tirosChefes; }
+    /** Comeca a fuga do buraco negro com a nave escolhida (a camera entra na cabine). */
+    private void iniciarFuga() { tirosChefes.clear(); tirosInimigos.clear(); nave.getMisseis().clear(); itens.clear(); fuga = new FugaFinal(nave.getModeloVisual()); MusicaJogo.trocarSeDisponivel("fuga"); }
+    FugaFinal getFugaTeste() { return fuga; }
     String getEtapaTeste() {
         return this.etapa.name();
     }
@@ -2696,6 +2702,7 @@ implements ActionListener {
         @Override
         public void keyPressed(KeyEvent keyEvent) {
             int codigo = keyEvent.getKeyCode();
+            if (fuga != null) { if (codigo == KeyEvent.VK_ENTER || codigo == 80 || codigo == 27) { pausado = !pausado; SomJogo.pausar(pausado); } else if (!pausado) fuga.tecla(codigo, true); return; }
             if (cenaChefe != null && !pausado && (codigo == KeyEvent.VK_ENTER || codigo == KeyEvent.VK_SPACE)) { cenaChefe.pular(); return; }
             if (naBase && !pausado) {
                 if (!teclasTeste.add(codigo)) return;
@@ -2844,6 +2851,7 @@ implements ActionListener {
         @Override
         public void keyReleased(KeyEvent keyEvent) {
             teclasTeste.remove(keyEvent.getKeyCode());
+            if (fuga != null) { fuga.tecla(keyEvent.getKeyCode(), false); return; }
             if(keyEvent.getKeyCode()==81)geloPressionado=false;if(keyEvent.getKeyCode()==69)fogoPressionado=false;
             if (keyEvent.getKeyCode() == 32) {
                 Fase.this.espacoPressionado = false;

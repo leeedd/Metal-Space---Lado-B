@@ -47,6 +47,8 @@ e.getNave().teleportar(100,480);Asteroide perto=new Asteroide(120,495,12,1).lanc
    if(b<7){for(int i=0;i<300&&TesteInvasao093.get(z,"miniChefe")==null;i++)z.atualizarSimulacao(1/60.0);}}
   ok(z.getEtapaTeste().equals("BATALHA_CHEFE")&&z.getChefeTeste()!=null&&z.getChefeTeste().getFase()==Fase.FINAL,"depois da oitava banda vem a luta final");
   java.lang.reflect.Method dc=Fase.class.getDeclaredMethod("derrotarChefao");dc.setAccessible(true);dc.invoke(z);
+  for(int i=0;i<60*20&&z.getFugaTeste()==null;i++)z.atualizarSimulacao(1/60.0);
+  ok(z.getFugaTeste()!=null,"depois do Zaref vem a fuga do buraco negro");z.getFugaTeste().terminou=true;
   for(int i=0;i<60*20&&!z.getEtapaTeste().equals("CREDITOS");i++)z.atualizarSimulacao(1/60.0);
-  ok(z.getEtapaTeste().equals("CREDITOS"),"depois do Zaref vem os creditos");
+  ok(z.getEtapaTeste().equals("CREDITOS"),"depois da fuga vem os creditos");
   System.out.println("OK turne");}}

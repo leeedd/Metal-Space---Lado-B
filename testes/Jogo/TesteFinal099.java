@@ -52,8 +52,10 @@ public final class TesteFinal099 {
   }
   ok(chicote,"chicote da corrente");ok(mergulho,"mergulho do demonio");ok(agarrou,"corrente do Demonio das Correntes agarra a nave");
   bater(f,ChefeFinal.CORRENTES);ok(f.getChefeTeste()==null,"demonio derrotado");ok((boolean)get(f,"finalVencido"),"final vencido");
+  for(int i=0;i<60*20&&f.getFugaTeste()==null;i++){f.getNave().curar(1000);f.atualizarSimulacao(1.0/60);}
+  ok(f.getFugaTeste()!=null,"depois do ultimo chefe vem a fuga do buraco negro");f.getFugaTeste().terminou=true;
   for(int i=0;i<60*20&&!f.getEtapaTeste().equals("CREDITOS");i++){f.getNave().curar(1000);f.atualizarSimulacao(1.0/60);}
-  ok(f.getEtapaTeste().equals("CREDITOS"),"depois do Demonio das Correntes vem os creditos");
+  ok(f.getEtapaTeste().equals("CREDITOS"),"depois da fuga vem os creditos");
   System.out.println("OK Final: "+n+" verificacoes");System.exit(0);
  }
 }
