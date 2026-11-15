@@ -1861,7 +1861,7 @@ implements ActionListener {
                 continue block9;
             }
         }
-        block11: for (Missel missel : this.nave.getMisseis()) {
+        block11: for (Missel missel : new ArrayList<Missel>(this.nave.getMisseis())) { // copia: um abate pode limpar a lista (fim de setor, chefe, mini-chefe)
             if (!missel.isVisible()) continue;
             object = missel.getBounds();
             if (this.chefe != null) {
