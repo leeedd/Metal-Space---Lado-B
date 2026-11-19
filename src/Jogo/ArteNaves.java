@@ -79,7 +79,6 @@ public final class ArteNaves {
     }
 
     public static void desenharJogador(Graphics2D graphics2D, int n, int n2, int n3, int n4, double d, double d2, double d3, double d4, boolean bl) {
-        int[] nArray;
         n2 = Math.max(0, Math.min(4, n2));
         Graphics2D graphics2D2 = (Graphics2D)graphics2D.create();
         graphics2D2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
@@ -112,7 +111,7 @@ public final class ArteNaves {
             return;
         }
         int n7 = n3 - (n2 == 0 ? 20 : 0);
-        for (int n8 : nArray = new int[]{13, 32}) {
+        for (int n8 : new int[]{13, 32}) {
             if (bl && n8 == 32) continue;
             int n9 = d4 <= 0.25 ? 90 : (d4 <= 0.5 ? 135 : 184);
             graphics2D2.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 42));

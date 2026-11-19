@@ -12,3 +12,6 @@ native_blood.png
 # musicas das bandas: arquivos locais do jogador, nunca no repositorio
 musicas/
 *.zip
+
+# FFmpeg (134 MB, acima do limite do GitHub): baixado por baixar_ffmpeg.ps1, entra so no pacote do jogo
+ffmpeg/ffmpeg.exe

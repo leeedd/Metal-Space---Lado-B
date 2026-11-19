@@ -38,7 +38,7 @@ public final class MiniChefe {
     private String padrao() { String[] a = ataque(); return a == null ? "RAIO" : a[0]; }
     private Color corAtaque() { String[] a = ataque(); return a == null ? null : new Color(Integer.parseInt(a[2]), Integer.parseInt(a[3]), Integer.parseInt(a[4])); }
     private boolean atiraProjetil() { String p = padrao(); return !p.startsWith("RAIO") && !p.equals("VARRE"); }
-    private double emissao; private int naveYAlvo;
+    private double emissao;
     /** Altura da nave agora (a sentinela acompanha com o olho). */
     private int olharY = 330;
     private TiroChefe proj(double x0, double y0, double ang, double vel, TiroChefe.Movimento m) {
@@ -161,7 +161,7 @@ public final class MiniChefe {
                 this.carregando = false;
                 this.raioAlvo = (int)Math.round(this.y);
                 this.disparando = true;SomJogo.tocar(atiraProjetil() ? SomJogo.Efeito.CHEFE_TIRO : SomJogo.Efeito.LASER);
-                naveYAlvo = n; emissao = 0;
+                emissao = 0;
                 if (atiraProjetil()) { this.atingiu = true; abrirAtaque(n); } // sem raio: o perigo sao os projeteis
                 String pd = padrao(); this.relogioRaio = pd.equals("ESPIRAL") || pd.equals("RAJADA") ? 1.0 : pd.equals("VARRE") ? .9 : 0.43;
             }

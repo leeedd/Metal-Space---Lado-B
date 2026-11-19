@@ -86,7 +86,8 @@ final class RadioPirata {
         double e = w / (double) MW, fim = duracao(), a = Math.min(Math.min(1, tempo / ABRIR), Math.min(1, (fim - tempo) / FECHAR));
         int hv = (int) (h * Math.max(.06, a)), yv = y0 + (h - hv) / 2;
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        g.drawImage(MOLDURA, x0, yv, w, hv, null);
+        if (hv == h) CacheEscala.desenhar(g, MOLDURA, x0, yv, w, hv, 0, 0, MOLDURA.getWidth(), MOLDURA.getHeight()); // aberta: copia pronta
+        else g.drawImage(MOLDURA, x0, yv, w, hv, null);                            // abrindo/fechando: tamanho muda
         int tx = x0 + (int) (TELA_X * e), ty = y0 + (int) (TELA_Y * e), tl = (int) (TELA_L * e);
         if (a < 1) { estatica(g, tx, Math.max(yv, ty), tl, Math.min(tl, hv), 1); g.dispose(); return; }
         int letras = (int) Math.min(atual.length(), Math.max(0, tempo - ABRIR) * LETRAS_POR_S);

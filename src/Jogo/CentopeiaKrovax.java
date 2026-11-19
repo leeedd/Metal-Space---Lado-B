@@ -28,7 +28,7 @@ final class CentopeiaKrovax {
     private final List<double[]> rastro = new ArrayList<>();   // posicoes passadas da cabeca (x, y)
     private final int[] vidaSeg = new int[SEGMENTOS];
     private final double[] flashSeg = new double[SEGMENTOS];
-    private double hx = W + 120, hy = TOPO + 200, ang = Math.PI, tempo, entrada, fase, flash, recarga = 1.4;
+    private double hx = W + 120, hy = TOPO + 200, ang = Math.PI, tempo, entrada, flash, recarga = 1.4;
     private double grito, mordida, enrolar, alvoX, alvoY, anguloEnrolar;
     private int golpes, ultimoSegAtingido = -1;
     private boolean furia, bloqueou, acertou;

@@ -1,0 +1,20 @@
+METAL SPACE - LEGENDS OF METAL
+Licencas de terceiros
+=====================
+
+FFmpeg (radio e playlist do jogo)
+---------------------------------
+O jogo usa o programa FFmpeg (https://ffmpeg.org), sem nenhuma alteracao, para decodificar
+as radios da internet e as musicas da playlist do jogador. O FFmpeg roda como programa separado
+(pasta ffmpeg/) e pode ser trocado por outra versao pelo proprio usuario.
+
+  Versao:   9.0.2 (build LGPL para Windows 64 bits de github.com/BtbN/FFmpeg-Builds)
+  Licenca:  GNU Lesser General Public License, versao 3 (texto completo em ffmpeg/LICENCA_FFMPEG_LGPL3.txt)
+  Codigo:   https://ffmpeg.org/download.html  e  https://github.com/BtbN/FFmpeg-Builds
+
+FFmpeg is a trademark of Fabrice Bellard, originator of the FFmpeg project.
+
+Radios da internet
+------------------
+As estacoes da lista da radio pertencem as suas emissoras. O jogo apenas se conecta ao endereco
+publico de cada uma, como um tocador de radio; nenhuma musica dessas radios e distribuida com o jogo.

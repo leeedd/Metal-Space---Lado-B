@@ -11,7 +11,6 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
-import java.util.Locale;
 
 public class Item {
     private final Tipo tipo;
@@ -64,7 +63,6 @@ public class Item {
             graphics2D2.dispose();
             return;
         }
-        String string2 = "item_icone_" + this.tipo.name().toLowerCase(Locale.ROOT) + ".png";
         graphics2D2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         graphics2D2.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 80));
         graphics2D2.fillRect(n - 2, n2 - 2, 28, 28);

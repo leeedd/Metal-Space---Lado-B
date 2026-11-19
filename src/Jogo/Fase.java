@@ -32,7 +32,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
@@ -50,7 +49,6 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
 import javax.swing.JPanel;
@@ -60,29 +58,15 @@ public class Fase
 extends JPanel
 implements ActionListener {
     private static final long serialVersionUID = 1L;
-    private static final int TOTAL_INIMIGOS = 330;
-    private static final int PONTOS_POR_INIMIGO = 100;
-    private static final int MAX_PARTICULAS = 600;
     private static final int[] FINAIS_SETORES = new int[]{56, 120, 192, 272, 360, 456, 560, 672};
     private static final int TOTAL_SETORES = FINAIS_SETORES.length;
     private static final int[] ORDEM_CHEFOES = new int[]{8, 2, 3, 4, 5, 6, 7, 1};
     private static final String[] NOMES_SETORES = new String[]{"LULA DO ABISMO", "LEGIAO CROMADA", "VORTICE NEGRO", "FERRUGEM ATOMICA", "CINZAS DE ORION", "NECROPOLIS", "FURIA DA TORMENTA", "ECLIPSE PROFANO"};
-    private static final int TAMANHO_ESQUADRAO = 5;
-    private static final int MODO_X = 818;
-    private static final int MODO_Y = 49;
-    private static final int LARGURA_BOTAO_MODO = 40;
-    private static final int ESPACO_BOTAO_MODO = 4;
-    private static final double DURACAO_ALERTA = 4.8;
-    private static final double DURACAO_INTERLUDIO = 3.0;
     private Etapa etapa = Etapa.COMBATE;
     private double tempoEtapa;
     private int chefePendente;
     private EntradaChefe apresentacao;
-    private static final double DURACAO_NUCLEAR = 0.72;
-    private static final double DURACAO_TREMOR = 0.42;
-    private static final double DURACAO_CLARAO = 0.26;
     private FundoEspacial fundoEspacial = new FundoEspacial();
-    private final Image gameOver = Assets.imagem("game_over.jpg");
     private final Random aleatorio = new Random();
     private final Timer timer;
     private Nave nave;
@@ -106,7 +90,9 @@ implements ActionListener {
     private final List<TiroChefe> tirosChefes = new ArrayList<TiroChefe>();
     private final List<Asteroide> asteroides = new ArrayList<Asteroide>();
     private boolean emboscadaUsada, emboscadaPendente, intercepcao;
-    private double tempoInterdicao, saidaIntercepcao;
+    @SuppressWarnings("unused") // lido pelos testes TesteAtlas097 e TesteViagem096 (reflexao)
+    private double tempoInterdicao;
+    private double saidaIntercepcao;
     private double esperaEnxame;
     private int reforcosEnxame, ultimaFormacaoEnxame=-1;
     private boolean rainhaInterdicao=true;
@@ -155,7 +141,6 @@ implements ActionListener {
     private double tempoOndaEscudo;
     private double ondaX;
     private double ondaY;
-    private static final double RAIO_ONDA_ESCUDO = 190.0;
     private Chefe chefe;
     private CenaFinal cenaFinal;
     private CinematicaNave cenaNave;
@@ -172,9 +157,6 @@ implements ActionListener {
     /** Base aliada do setor e ponto de retomada gravado na ultima atracagem. */
     private EstacaoAliada base; private boolean naBase, menuBase; private int cursorBase, modeloBase; private String avisoBase = "";
     private double[] retomada;
-    private boolean oculosMalacharColetados;
-    private boolean emblemaValdrakColetado;
-    private boolean insigniaBobColetada;
     private final boolean[] trofeusOutrasLendas = new boolean[4];
     private final boolean[] trofeusAdquiridos = new boolean[9];
     private int trofeuPendente;
@@ -275,15 +257,13 @@ implements ActionListener {
     private boolean venceu = false;
     private boolean espacoPressionado;
     private int pontos;
-    private int creditos, kitsReparo, meteorosGerados;
+    private int creditos, meteorosGerados;
     private ProgressaoNave inventario = new ProgressaoNave();
     private Energia098 energia = new Energia098();
     private Poderes099 poderes = new Poderes099();
     private int cursorPausa;
     private Segredo098 segredo, segredoCasco;
     private boolean segredoGerado;
-    private int produtoLoja;
-    private boolean oficinaAberta;
     private Fusao098 efeitoFusao;
     private double recargaFusao;
     private LaserConvergencia laser;
@@ -416,7 +396,7 @@ implements ActionListener {
         for(ProjetilInimigo t:tirosInimigos)if(t.isVisible()&&poderes.interceptar(t.getBounds()))t.setVisible(false);
         for(TiroChefe t:tirosChefes)if(t.isVisible()&&poderes.interceptar(t.getBounds()))t.setVisible(false);
         if(!poderes.pulso())return;
-        Rectangle area=poderes.alcance();int dano=poderes.dano();
+        int dano=poderes.dano();
         for(Alien a:alien)if(a.isVisible()&&poderes.atinge(a.getBounds())){
             if(poderes.ativo==0)a.agarrarPor(.6);
             if(poderes.ativo==4)a.eletrocutarPor(1.2);
@@ -743,7 +723,6 @@ implements ActionListener {
         ladoRota = aleatorio.nextBoolean() ? 1 : -1;
         double velPassagem = 205 + chefesDerrotados * 12 + aleatorio.nextInt(40), permanencia = 6 + aleatorio.nextDouble() * 5;
         for (int i = 0; i < n2; ++i) {
-            Alien.Classe[] classeArray;
             Alien.Classe classe;
             int n6;
             Alien.Tipo tipo;
@@ -1060,17 +1039,25 @@ implements ActionListener {
                 graphics2D.setColor(new Color(24,28,40));graphics2D.fillRect(bx+52,hy-8,52,7);
                 graphics2D.setColor(trava?((int)(tempoTotal*6)%2==0?Color.RED:new Color(120,20,20)):i==0?new Color(90,200,255):new Color(255,140,50));
                 graphics2D.fillRect(bx+52,hy-8,(int)(52*energia.calor(i)/100),7);}}
-        graphics2D.drawString("R: RESERVAS "+inventario.carga(0)+"/"+inventario.carga(1)+"/"+inventario.carga(2)+"/"+inventario.carga(3),16,572);
-        graphics2D.drawString(inventario.temChaveIndice(poderes.selecionado)?"PODER: "+Poderes099.NOMES[poderes.selecionado]+"  (C USAR / X TROCAR / 1-8)":"",16,592);
+        // Reservas e poder: faixa escura atras e contorno no texto, para ler sobre qualquer fundo (planeta claro, explosoes)
+        {String reservas="R: RESERVAS "+inventario.carga(0)+"/"+inventario.carga(1)+"/"+inventario.carga(2)+"/"+inventario.carga(3);
+            String poder=inventario.temChaveIndice(poderes.selecionado)?"PODER: "+Poderes099.NOMES[poderes.selecionado]+"  (C USAR / X TROCAR / 1-8)":"";
+            graphics2D.setFont(new Font("Monospaced",1,12));java.awt.FontMetrics fm=graphics2D.getFontMetrics();
+            int larg=Math.max(fm.stringWidth(reservas),fm.stringWidth(poder))+16;
+            graphics2D.setColor(new Color(2,5,14,200));graphics2D.fillRect(8,558,larg,40);
+            graphics2D.setColor(new Color(90,120,170,160));graphics2D.drawRect(8,558,larg-1,39);
+            textoContornado(graphics2D,reservas,16,573,Color.WHITE);textoContornado(graphics2D,poder,16,592,new Color(255,206,98));}
         // Energia do poder equipado em gomos (estilo arcade), abaixo do painel superior; cadeado enquanto nao houver poder.
         {int sel=poderes.selecionado;double alvo=inventario.temChaveIndice(sel)?poderes.energia[sel]:0;
             if(energiaExibidaPoder<alvo){int antes=(int)(energiaExibidaPoder/100*19);energiaExibidaPoder=Math.min(alvo,energiaExibidaPoder+1.2);if((int)(energiaExibidaPoder/100*19)>antes)SomJogo.tocar(SomJogo.Efeito.COLETA);}else energiaExibidaPoder=alvo;
             HudEnergia.desenhar(graphics2D,6,Config.HUD+42,poderes,inventario,energiaExibidaPoder,tempoTotal);
             if(inventario.temChaveIndice(sel)&&PainelSom.dicasTeclas())HudEnergia.teclas(graphics2D,6,Config.HUD+42);}
         // Truque exclusivo da nave: nome e recarga no rodape
-        {double rc=nave.recargaTruque(),mx=nave.maxRecargaTruque();int tx=640,ty=578;graphics2D.setFont(new Font(Font.MONOSPACED,Font.BOLD,11));
+        {double rc=nave.recargaTruque(),mx=nave.maxRecargaTruque();int tx=640,ty=564;graphics2D.setFont(new Font(Font.MONOSPACED,Font.BOLD,11));
+            // fica acima da faixa do CR (y 575..600), com fundo proprio
+            graphics2D.setColor(new Color(2,5,14,200));graphics2D.fillRect(tx-6,ty-15,132,26);
             graphics2D.setColor(new Color(20,26,38));graphics2D.fillRect(tx,ty,120,8);graphics2D.setColor(rc<=0?new Color(255,206,98):new Color(110,120,140));graphics2D.fillRect(tx,ty,(int)(120*(1-rc/mx)),8);
-            graphics2D.setColor(Color.WHITE);graphics2D.drawString((PainelSom.dicasTeclas()?"SHIFT: ":"")+nave.nomeTruque()+(rc>0?"  "+(int)Math.ceil(rc)+"s":""),tx,ty-3);}
+            textoContornado(graphics2D,(PainelSom.dicasTeclas()?"SHIFT: ":"")+nave.nomeTruque()+(rc>0?"  "+(int)Math.ceil(rc)+"s":""),tx,ty-3,Color.WHITE);}
         if (this.chefe != null && this.emJogo) {
             int cine = this.chefe.cinema();
             if (cine > 0) { graphics2D.setColor(Color.BLACK); graphics2D.fillRect(0, 0, 960, Config.HUD + cine); graphics2D.fillRect(0, 600 - cine, 960, cine); } // faixas de cinema na montagem
@@ -1109,10 +1096,18 @@ implements ActionListener {
         if (escolhendoSetor || this.pausado && !painelTeste) this.desenharMenuPausa(graphics2D);
         graphics2D.setColor(Color.CYAN);
         graphics2D.setFont(new Font("Monospaced", Font.BOLD, 12));
-        if(!naBase)graphics2D.drawString(partidaTeste ? "TESTE / SEM PLACAR — F8: PAINEL" : "F8: TESTAR SETORES", 420, 591);
+        if(!naBase)textoContornado(graphics2D, partidaTeste ? "TESTE / SEM PLACAR — F8: PAINEL" : "F8: TESTAR SETORES", 420, 591, Color.CYAN);
         if (painelTeste) desenharPainelTeste(graphics2D);
         PainelSom.desenhar(graphics2D);
         graphics2D.dispose();
+    }
+
+    /** Texto do rodape com contorno preto de 1 pixel: legivel sobre fundo claro ou escuro. */
+    private static void textoContornado(Graphics2D g, String s, int x, int y, Color cor) {
+        if (s.isEmpty()) return;
+        g.setColor(Color.BLACK);
+        for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) if (dx != 0 || dy != 0) g.drawString(s, x + dx, y + dy);
+        g.setColor(cor); g.drawString(s, x, y);
     }
 
     private void desenharPainelTeste(Graphics2D g) {
@@ -1147,7 +1142,7 @@ implements ActionListener {
         esperaProximoEsquadrao = 0; avisoMini = -1;
         for (int i=0;i<Nave.MAX_EVOLUCAO;i++) nave.melhorar();
         nave.coletarArmaSecundaria(); Missel.setTipoTiro(0);
-        geloColetado = fogoColetado = true; kitsReparo = 1;
+        geloColetado = fogoColetado = true;
         iniciarRitmoSetor();
         fundoEspacial.definirProgresso(0, chefesDerrotados);
         if (encontro == KeyEvent.VK_S) {
@@ -1606,10 +1601,6 @@ implements ActionListener {
         return Math.min(3, (int)(this.tempoSetor / Math.max(1.0, this.duracaoMusicaSetor) * 4.0));
     }
 
-    private static String relogioSetor(double d) {
-        int n = Math.max(0, (int)d);
-        return String.format(Locale.ROOT, "%d:%02d", n / 60, n % 60);
-    }
 
     private void atualizarRitmoSetor(double d) {
         this.tempoSetor += d;
@@ -1849,7 +1840,7 @@ implements ActionListener {
                 int n;
                 if (!alien.isVisible() || !((Rectangle)object).intersects(alien.getBounds())) continue;
                 SomJogo.tocar(SomJogo.Efeito.IMPACTO);disparoElemental.apagar();
-                int n2 = n = disparoElemental.getTipo() == DisparoElemental.Tipo.FOGO ? 1 : 2;
+                n = disparoElemental.getTipo() == DisparoElemental.Tipo.FOGO ? 1 : 2;
                 if(disparoElemental.getTipo()==DisparoElemental.Tipo.FOGO)alien.incendiarPor(3);else alien.congelarPor(2.8);
                 comando.registrarAcerto(n==1?2:1); // n: 1 fogo, 2 gelo
                 if (alien.receberImpacto(0,alien.danoElemental(n==1,disparoElemental.dano()))) {
@@ -2008,12 +1999,10 @@ implements ActionListener {
                 break;
             }
             case 2: {
-                this.emblemaValdrakColetado = true;
                 this.nave.ativarBlindagemValdrak();
                 break;
             }
             case 3: {
-                this.insigniaBobColetada = true;
                 SomJogo.tocar(SomJogo.Efeito.ESCUDO);this.nave.ativarEscudo();
                 break;
             }
@@ -2038,7 +2027,6 @@ implements ActionListener {
                 break;
             }
             case 1: {
-                this.oculosMalacharColetados = true;
                 this.nave.desbloquearAtaqueSonico();
                 this.novoJogoMais = true;
                 if (!partidaTeste) ProgressoJogo.desbloquearLendaria();
@@ -2280,9 +2268,6 @@ implements ActionListener {
      * Uma revoada do enxame que atravessa a tela: trem na altura da nave, cobra, tesoura (cima e baixo
      * cruzando), V e parede com um buraco. Todas passam pelo lugar da nave para obrigar a desviar.
      */
-    private void configurarPassagem(Alien a,int padrao,int i,int quantidade,double vel){configurarPassagem(a,padrao,i,quantidade,vel,buracoPassagem(i,quantidade));}
-    private int buracoDaOnda;
-    private int buracoPassagem(int i,int q){if(i==0)buracoDaOnda=aleatorio.nextInt(Math.max(1,q-1));return buracoDaOnda;}
     /** Formatos de travessia: trem na altura da nave, cobra, tesoura, V apontado para a nave e parede com um buraco. */
     private void configurarPassagem(Alien a,int padrao,int i,int quantidade,double vel,int buraco){
         double ny=Math.max(110,Math.min(510,nave.getY()+18)),meio=(quantidade-1)/2.0;
@@ -2339,7 +2324,7 @@ implements ActionListener {
         this.emJogo = true;
         this.venceu = false;
         this.espacoPressionado = false;
-        this.pontos = 0;creditos=0;kitsReparo=0;meteorosGerados=0;iniciais="";placarConfirmado=false;mostrarPlacarFinal=false;erroPlacar="";
+        this.pontos = 0;creditos=0;meteorosGerados=0;iniciais="";placarConfirmado=false;mostrarPlacarFinal=false;erroPlacar="";
         this.eliminados = 0;
         this.tempoTotal = 0.0;
         this.tempoAviso = 0.0;
@@ -2360,14 +2345,10 @@ implements ActionListener {
         this.cenaFinal = null;
         cargaLaser = 0; nave.travar(false);
         this.chefesDerrotados = 0; setorAtual = 0; setoresVencidos = 0; escolhendoSetor = false;
-        this.oculosMalacharColetados = false;
-        this.emblemaValdrakColetado = false;
-        this.insigniaBobColetada = false;
         Arrays.fill(this.trofeusOutrasLendas, false);
         Arrays.fill(this.trofeusAdquiridos, false);
         if (this.novoJogoMais) {
             this.nave.desbloquearAtaqueSonico();
-            this.oculosMalacharColetados = true;
             this.trofeusAdquiridos[1] = true;
         }
         this.etapa = Etapa.COMBATE;
@@ -2381,7 +2362,7 @@ implements ActionListener {
         this.particulas.clear();
         this.tempoNuclear = 0.72;
         this.cenaNave = null;
-        inventario = new ProgressaoNave();energia=new Energia098();poderes=new Poderes099();recargaFusao=0;efeitoFusao=null;oficinaAberta=false;cursorPausa=0;aplicarInventario();
+        inventario = new ProgressaoNave();energia=new Energia098();poderes=new Poderes099();recargaFusao=0;efeitoFusao=null;cursorPausa=0;aplicarInventario();
         this.iniciarRitmoSetor();
         this.fundoEspacial.reiniciar();
         this.ultimoQuadroNanos = System.nanoTime();
@@ -2744,6 +2725,7 @@ implements ActionListener {
                 else mapaEstelar.tecla(codigo);
                 repaint(); return;
             }
+            if(codigo==KeyEvent.VK_F11||codigo==KeyEvent.VK_F12){if(teclasTeste.add(codigo))PainelSom.tecla(codigo);repaint();return;} // radio
             if(codigo==KeyEvent.VK_F9||codigo==KeyEvent.VK_F10){
                 if(!teclasTeste.add(codigo))return;
                 if(codigo==KeyEvent.VK_F9&&emJogo){pausado=true;SomJogo.pausar(true);nave.soltarTeclas();espacoPressionado=geloPressionado=fogoPressionado=false;}

@@ -21,10 +21,8 @@ final class FabricasIndustriais {
     private final double[] fx = {80, 510, 940}, fy = {Config.ALTURA - 230, Config.HUD + 20, Config.ALTURA - 215}, relogio = {0, 1.7, 3.1};
     private final int[] indice = {0, 1, 2};
     private final Random sorte = new Random(3);
-    private double tempo;
 
     void atualizar(double dt) {
-        tempo += dt;
         for (int i = 0; i < N; i++) {
             fx[i] -= VELOCIDADE * dt; if (fx[i] < -FW) fx[i] += N * 430;
             relogio[i] += dt; if (relogio[i] > TEMPO_MONTAGEM + TEMPO_SAIDA + .6) { relogio[i] = 0; indice[i] += N; }

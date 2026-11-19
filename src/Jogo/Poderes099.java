@@ -21,7 +21,7 @@ final class Poderes099 {
  void selecionar(int i,ProgressaoNave p){if(p.temChaveIndice(i))selecionado=i;}
  void proximo(ProgressaoNave p){for(int n=1;n<=8;n++){int i=(selecionado+n)%8;if(p.temChaveIndice(i)){selecionado=i;return;}}}
  boolean ativar(ProgressaoNave p,Nave n){int i=selecionado;if(!p.temChaveIndice(i)||ativo>=0||pendente>=0||cooldown[i]>0||energia[i]<CUSTO[i])return false;energia[i]-=CUSTO[i];cooldown[i]=RECARGA[i]*(1-.06*n.motorPermanente());pendente=i;preparo=PREPARO;naveX=n.getX()+22;naveY=n.getY()+20;SomJogo.tocar(SomJogo.Efeito.ENERGIA);return true;}
- private void disparar(int i,Nave n){nave=n;ativo=i;restante=DURACAO[i];tempo=pulso=0;vidaMoto=8;x=n.getX()+95;y=n.getY()+18;proximaCorrente=0;corrente.clear();
+ private void disparar(int i,Nave n){ativo=i;restante=DURACAO[i];tempo=pulso=0;vidaMoto=8;x=n.getX()+95;y=n.getY()+18;proximaCorrente=0;corrente.clear();
   if(i==6){double[][] off={{0,-105},{0,105},{150,0}};for(int c=0;c<3;c++){clones[c][0]=Math.max(8,Math.min(905,n.getX()+off[c][0]));clones[c][1]=Math.max(90,Math.min(554,n.getY()+off[c][1]));vidaClones[c]=3;}}SomJogo.tocar(i==5?SomJogo.Efeito.FOGO:SomJogo.Efeito.FUSAO);}
  int recarregar(ProgressaoNave p){return recarregar(p,20);}
  /** Capsula: enche primeiro o poder equipado; o que sobrar vai para os outros poderes liberados. */
@@ -59,7 +59,7 @@ final class Poderes099 {
  // estado dos poderes 1 a 7
  private final double[][] clones=new double[3][2];private final int[] vidaClones=new int[3];private int proximaTroca;private double giroCarta;private final java.util.List<double[]> corrente=new java.util.ArrayList<>();private double proximaCorrente;
  private double cartaX0,cartaY0,pegouCarta;
- private final java.util.Random acaso=new java.util.Random(7);private Nave nave;
+ private final java.util.Random acaso=new java.util.Random(7);
  private double extensao(){double t=DURACAO[0]-restante;return t<.3?t/.3:restante<.45?Math.max(0,restante/.45):1;}
  private double[] raizTentaculo(int i,Nave n){return new double[]{n.getX()+6,n.getY()+20+(i-1)*12};}
  /** Arremessos pedidos pelos tentaculos: {x, y, vx, vy} do inimigo agarrado (a fase aplica). */

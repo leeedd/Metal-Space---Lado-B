@@ -1,6 +1,5 @@
 package Jogo;
 
-import java.awt.image.BufferedImage;
 
 /** O final comeca na escolha do show, e a camisa preta do piloto ganha o emblema da banda escolhida. */
 public class TesteCamisaShow {

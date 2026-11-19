@@ -85,10 +85,10 @@ final class LaserConvergencia {
         q.dispose(); return true;
     }
 
-    final int tipo; private double tempo; private final int vaporizados;
+    final int tipo; private double tempo;
     private final Random acaso = new Random(9);
     private final double[][] alvos;
-    LaserConvergencia(int tipo, int vaporizados, double[][] alvos) { this.tipo = tipo; this.vaporizados = vaporizados; this.alvos = alvos; }
+    LaserConvergencia(int tipo, int vaporizados, double[][] alvos) { this.tipo = tipo; this.alvos = alvos; }
     void atualizar(double dt) { tempo += dt; }
 
     /** Carga: particulas convergindo para o nariz da nave e um anel que fecha conforme o progresso (0..1). */

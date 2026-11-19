@@ -71,7 +71,7 @@ public final class HudMetal {
         graphics2D2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
         graphics2D2.setColor(new Color(5, 8, 18));
         graphics2D2.fillRect(0, 0, 960, 72);
-        graphics2D2.drawImage(MOLDURA, 0, 0, 960, 72, 9, 284, 2162, 439, null);
+        CacheEscala.desenhar(graphics2D2, MOLDURA, 0, 0, 960, 72, 9, 284, 2162, 439); // escala uma vez so
         HudMetal.texto(graphics2D2, "INTEGRIDADE DO CASCO", 94, 23, 12, new Color(200, 224, 248));
         for (n10 = 0; n10 < 12; ++n10) {
             n9 = 94 + n10 * 17;

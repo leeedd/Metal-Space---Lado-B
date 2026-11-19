@@ -32,7 +32,7 @@ final class ChefeVanInferno {
 
     // van: as tres pranchas tem celulas de 700x380 (paredao 700x470) com a caveira da lateral no mesmo ponto
     private static final double E = .62;
-    private final int vanW = (int) (700 * E), vanH = (int) (380 * E);
+    private final int vanW = (int) (700 * E);
     private double vx = W + 40, vy, vAlvoY, aviso, proximaManobra = 2.6, percorrido, ultimoRastro;
     private boolean investindo, voltando;
     /** Manobras: paredao de caixas (empurra), gancho (puxa) e, so na furia, o rasante. */

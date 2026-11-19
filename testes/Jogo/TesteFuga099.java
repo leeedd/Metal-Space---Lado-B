@@ -3,10 +3,12 @@ import java.awt.event.KeyEvent;import java.lang.reflect.Method;
 /** Fuga do buraco negro: entra depois do ultimo chefe, o jogador controla a potencia, atira e se fere, e ao chegar na saida vem os creditos. */
 public final class TesteFuga099 {
  static int n;static void ok(boolean b,String m){if(!b)throw new AssertionError(m);n++;}
+ /** Constante de um enum pelo nome, sem tipo bruto (evita o aviso de Class sem parametro). */
+ static Object constante(Class<?> tipo,String nome){for(Object o:tipo.getEnumConstants())if(((Enum<?>)o).name().equals(nome))return o;throw new IllegalArgumentException(nome);}
  static void tick(Fase f,double s){for(int i=0;i<(int)(s*60);i++)f.atualizarSimulacao(1.0/60);}
  public static void main(String[] a)throws Exception{
   Fase f=TesteInvasao093.fase(100);TesteInvasao093.set(f,"chefesDerrotados",8);TesteInvasao093.set(f,"van_infernoVencido",true);TesteInvasao093.set(f,"reuniaoVencida",true);TesteInvasao093.set(f,"finalVencido",true);
-  java.lang.reflect.Field fe=Fase.class.getDeclaredField("etapa");fe.setAccessible(true);fe.set(f,Enum.valueOf((Class)fe.getType(),"INTERLUDIO"));TesteInvasao093.set(f,"tempoEtapa",0.0);TesteInvasao093.set(f,"trofeuPendente",0);
+  java.lang.reflect.Field fe=Fase.class.getDeclaredField("etapa");fe.setAccessible(true);fe.set(f,constante(fe.getType(),"INTERLUDIO"));TesteInvasao093.set(f,"tempoEtapa",0.0);TesteInvasao093.set(f,"trofeuPendente",0);
   Method vp=Fase.class.getDeclaredMethod("atualizarTransicao",double.class);vp.setAccessible(true);vp.invoke(f,.02);
   FugaFinal u=f.getFugaTeste();ok(u!=null,"depois do ultimo chefe comeca a fuga");
   tick(f,FugaFinal.INTRO+.2);ok(u.intro==0,"a camera entra na cabine");

@@ -48,6 +48,8 @@ public final class SomJogo {
    float[] a=!f.isFile()&&propria==null&&MusicaChip.reconhece(arquivo)?MusicaChip.gerar(arquivo):carregar(u,50331648); // sem arquivo: trilha 16-bit gerada na hora
    if(arquivo.equals(musicaPedida))MOTOR.musica(a);}catch(Exception e){diagnostico="MUSICA "+arquivo+": "+e.getMessage();}},"MetalSpace-Musica");
   t.setDaemon(true);t.start();}
+ /** Radio/playlist no lugar da trilha (null volta a trilha). O audio do jogo liga se ainda nao estiver ligado. */
+ static void fonteMusica(FonteContinua f,float ganho){MOTOR.fonte(f,ganho);if(f!=null)iniciar();}
  public static void pausar(boolean p){if(pausado!=p){pausado=p;MOTOR.pausar(p);if(p)FILA.clear();}}
  public static void limpar(){FILA.clear();MOTOR.limpar();}
  static long emitidosTeste(Efeito e){return CONTAGEM[e.ordinal()];}

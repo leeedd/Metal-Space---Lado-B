@@ -23,7 +23,6 @@ public class Alien {
     private double alvoColetaY = Double.NaN;
     private boolean ativouKamikaze;
     private final int largura = 64;
-    private final int altura = 57;
     private int variante;
     private int universo;
     private int especieEnxame=-1;
@@ -55,7 +54,7 @@ public class Alien {
      */
     static final int MERGULHO = 0, PINCA = 1, LACO = 2, POR_TRAS = 3, ESCADA = 4;
     private int rota = -1;
-    private double tRota, durRota, atrasoRota, laco;
+    private double tRota, durRota, atrasoRota;
     private final double[] pr = new double[8];
     void iniciarRota(int tipo, double atraso, double duracao, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3) {
         rota = tipo; atrasoRota = atraso; durRota = duracao; tRota = 0; emFormacao = false; passagem = false; posicionado = true;
@@ -354,7 +353,7 @@ public class Alien {
                 d3 = this.x - (double)missel.getX();
                 d2 = this.y + 28.5 - (double)missel.getY();
                 if (!(d3 > 5.0) || !(d3 < 155.0) || !(Math.abs(d2) < 35.0)) continue;
-                double d9 = this.direcaoDesvio = d2 >= 0.0 ? 1.0 : -1.0;
+                this.direcaoDesvio = d2 >= 0.0 ? 1.0 : -1.0;
                 if (this.y <= 108.0) {
                     this.direcaoDesvio = 1.0;
                 }

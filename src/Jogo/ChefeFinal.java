@@ -41,7 +41,6 @@ final class ChefeFinal {
     /** Moldura da barra de vida (faixa preta da vida e dois escudos para as almas dos gemeos). */
     private static final BufferedImage BARRA = ler("barra_chefe_final.png");
     /** Portal do inferno (4 quadros girando). Sem a arte, um redemoinho de fagulhas. */
-    private static final BufferedImage PORTAL = ler("portal_inferno.png");
     /** Duracao da cena da invocacao: metades erguidas, juntando, raio, portal abrindo, demonio saindo, portal fechando. */
     static final double INVOCACAO = 12.0, BURACO_FIM = 7.5, FUSAO_FIM = 3.0; // fusao das almas + buraco negro, depois a dobra ate o inferno
     private final double[] almaX = new double[2], almaY = new double[2];
@@ -757,7 +756,7 @@ final class ChefeFinal {
     // ---------------- desenho ----------------
     void desenhar(Graphics2D tela) {
         Graphics2D g = (Graphics2D) tela.create();
-        tempoGemeos = tempo; moonGemeos = moon; dancaGemeos = danca; golpeGemeos = golpes; poseDesV = gestoV > 0 ? poseV : -1; poseDesR = gestoR > 0 ? poseR : -1; tapasDes = rajadaR > 0; chutesDes = rajadaV > 0; saltoDes = emDupla() && entrada < 1 && ato == BARDO; entradaDes = entrada; poseDes = emDupla() && entrada >= 1 && pose < POSE_DUR ? pose : -1; for (int i = 0; i < 2; i++) { offDes[i] = (int) offX[i]; offDesY[i] = (int) offY[i]; estDes[i] = emDupla() ? est[i] : LIVRE; guardaQ[i] = estT[i] > 1.15 ? 0 : bloqueio[i] > 0 ? 2 : estT[i] < .25 ? 3 : 1; }
+        tempoGemeos = tempo; moonGemeos = moon; dancaGemeos = danca; poseDesV = gestoV > 0 ? poseV : -1; poseDesR = gestoR > 0 ? poseR : -1; tapasDes = rajadaR > 0; chutesDes = rajadaV > 0; saltoDes = emDupla() && entrada < 1 && ato == BARDO; entradaDes = entrada; poseDes = emDupla() && entrada >= 1 && pose < POSE_DUR ? pose : -1; for (int i = 0; i < 2; i++) { offDes[i] = (int) offX[i]; offDesY[i] = (int) offY[i]; estDes[i] = emDupla() ? est[i] : LIVRE; guardaQ[i] = estT[i] > 1.15 ? 0 : bloqueio[i] > 0 ? 2 : estT[i] < .25 ? 3 : 1; }
         if (quedaV > 0) quedaV += 1 / 60.0; if (quedaR > 0) quedaR += 1 / 60.0; alfaV = emDupla() && vidaV <= 0 ? 0f : 1f; alfaR = emDupla() && vidaR <= 0 ? 0f : 1f; // quem caiu vira a animacao de queda
         if (ato == MONGE && LUA != null && transicao <= 0) { float a0 = (float) Math.min(1, luaT / 2); float uiva = lobos > 0 && lobos < .9 ? (float) (1 - lobos / .9) : 0; g.setComposite(AlphaComposite.SrcOver.derive(Math.min(1f, a0 * .6f + uiva * .4f))); int lw = (int) (230 * (1 + uiva * .15)); g.drawImage(LUA, W / 2 - 60 - lw / 2, TOPO + 8, lw, lw * LUA.getHeight() / LUA.getWidth(), null); g.setComposite(AlphaComposite.SrcOver); } // lua cheia da danca macabra
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
@@ -798,13 +797,6 @@ final class ChefeFinal {
         if (gesto > .25) return 2;
         if (gesto > 0) return 1;
         return (int) (tempo * 1.6) % 4 == 3 ? 3 : 0;
-    }
-    /** Bardo e Monge tocando la no fundo enquanto o Belzebu luta (nao levam tiro). */
-    private void dupla(Graphics2D g, float a) {
-        int s = 150; int q = (int) (tempo * 2.4) % 2 == 0 ? 0 : 3;
-        if (gemeos()) { corpo(g, BARDO, 1, W - s - 40, H - s - 4 + Math.sin(tempo * 2) * 6, s, a * .85f); return; } // os gemeos tocando violao no canto
-        corpo(g, BARDO, q, W - s - 10, TOPO + 4 + Math.sin(tempo * 2) * 6, s, a * .85f);
-        corpo(g, MONGE, q == 0 ? 3 : 0, W - s - 10, H - s - 4 + Math.sin(tempo * 2 + 1) * 6, s, a * .85f);
     }
     private void desenharTransicao(Graphics2D g) {
         // o ato que caiu some piscando
@@ -899,24 +891,6 @@ final class ChefeFinal {
     /** Na dobra a nave aparece sozinha por cima do vazio. */
     /** Tremor da tela durante o buraco negro (0 = parado). */
     double tremor() { if (apresB > 0) { double e = APRES_B - apresB; return e < 1.3 ? 5 : e > 2.7 && e < 3.2 ? 8 : 0; } if (rio > 0) return batidaVisual * (1 + (1 - rio / RIO_DUR) * 5); if (ato != BELZEBU || transicao <= 0) return 0; double t = INVOCACAO - transicao; return t > FUSAO_FIM && t < BURACO_FIM ? 3 + (t - FUSAO_FIM) * 3.5 : 0; }
-    private static void brilho(Graphics2D g, double cx, double cy, double r) {
-        for (int k = 3; k >= 1; k--) { int rr = (int) (r * k / 3); g.setColor(new Color(90, 255, 120, 40 + (3 - k) * 30)); g.fillOval((int) cx - rr, (int) cy - rr, rr * 2, rr * 2); }
-    }
-    /** Portal do inferno girando; sem a arte, aneis de fagulhas vermelhas e laranjas puxadas para o centro. */
-    private void portal(Graphics2D tela, int cx, int cy, int d) {
-        if (d <= 2) return;
-        Graphics2D g = (Graphics2D) tela.create();
-        if (PORTAL != null) { int fw = PORTAL.getWidth() / 4, fh = PORTAL.getHeight(), q = (int) (tempo * 10) % 4, w = d * fw / fh;
-            g.drawImage(PORTAL, cx - w / 2, cy - d / 2, cx + w / 2, cy + d / 2, q * fw, 0, q * fw + fw, fh, null); g.dispose(); return; }
-        g.setColor(new Color(20, 0, 10, 230)); g.fillOval(cx - d / 2 + d / 8, cy - d / 2 + d / 8, d * 3 / 4, d * 3 / 4);
-        java.util.Random r = new java.util.Random(9);
-        for (int k = 0; k < 220; k++) {
-            double raio = d / 2.0 * (.35 + .65 * r.nextDouble()), a = r.nextDouble() * Math.PI * 2 + tempo * (2.5 - raio / d * 2);
-            int x = cx + (int) (Math.cos(a) * raio), y = cy + (int) (Math.sin(a) * raio), tq = 3 + r.nextInt(3) * 2;
-            g.setColor(r.nextInt(3) == 0 ? new Color(255, 210, 80) : r.nextBoolean() ? new Color(255, 90, 30) : new Color(190, 20, 30)); g.fillRect(x, y, tq, tq);
-        }
-        g.dispose();
-    }
     private void desenharRaio(Graphics2D tela) {
         Graphics2D g = (Graphics2D) tela.create();
         double bx = raioX(), by = raioY(), ux = Math.cos(direcaoRaio), uy = Math.sin(direcaoRaio);
@@ -1026,7 +1000,6 @@ final class ChefeFinal {
             if (al < 1) a.setComposite(AlphaComposite.SrcOver.derive(Math.max(0f, Math.min(1f, al)) * ((int) (tempoGemeos * 20) % 2 == 0 || al >= 1 ? 1 : .4f)));
             a.drawImage(folha, x0, y0, x0 + w, y0 + h, qq * fw, 0, qq * fw + fw, fh, null); a.dispose(); }
     }
-    private static int golpeGemeos;
     private static BufferedImage demonioEscuro;
     /** Quadros 0 e 1 do Belzebu tingidos de roxo: vira o demonio fantasma do Demonio das Correntes. */
     private static BufferedImage escuro() {

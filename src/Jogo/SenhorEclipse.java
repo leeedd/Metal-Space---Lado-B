@@ -26,13 +26,13 @@ final class SenhorEclipse {
     private double boom;
     // trem maluco: atravessa uma faixa da tela buzinando (aviso antes), o ataque mais divertido do Malachar
     // rasante: 1 aviso (sobe e mira), 2 atravessa a tela voando, 3 volta pela direita
-    private int voo; private double vooT, vooY, vooX, voltas, vvx, vvy;
+    private int voo; private double vooT, voltas, vvx, vvy;
     /** Asas (senhor_eclipse_asas.png, 4 quadros: asas abrindo, asas abertas, voando 1, voando 2), ja virado para a esquerda. */
     private static final BufferedImage ASAS = ler("senhor_eclipse_asas.png");
-    private double tremX = -9999, tremY, tremAviso, esperaContato, sumido, tremAtaque; private List<TiroChefe> tiros_;
+    private double tremX = -9999, tremY, tremAviso, esperaContato, tremAtaque; private List<TiroChefe> tiros_;
     private static final int W = Config.LARGURA, H = Config.ALTURA, TOPO = Config.HUD, ALT = 340;
     private double x = W + 40, y, tempo, entrada, recarga = 1.4, golpeT, flash, coroa, coroaT, escuro, eclipseX, eclipseY, eclipseT = -1, naveX = 100, naveY = 300, vidaFrac = 1;
-    private int golpes, quadro;
+    private int golpes;
     private boolean usouTotal;
     private final java.util.Random sorte = new java.util.Random(23);
 
@@ -70,7 +70,7 @@ final class SenhorEclipse {
         recarga -= dt * dif.cadenciaInimigos * (vidaFrac < .4 ? 1.3 : 1);
         if (recarga > 0 || coroa > 0 || eclipseT >= 0 || tremAviso > 0 || voo != 0) return;
         double[] cabo = cabo(); int g = new int[]{0, 4, 5, 1, 2, 3}[golpes++ % 6]; golpeT = .5; // riff, trem, rasante, eclipse, coroa, grito
-        if (g == 5) { voo = 1; vooT = 0; voltas = vidaFrac < .4 ? 2 : 1; vooY = Math.max(TOPO - 20, Math.min(H - ALT + 20, naveY - ALT * .5)); recarga = 1.3; SomJogo.tocar(SomJogo.Efeito.ALERTA); return; } // rasante pela tela
+        if (g == 5) { voo = 1; vooT = 0; voltas = vidaFrac < .4 ? 2 : 1; recarga = 1.3; SomJogo.tocar(SomJogo.Efeito.ALERTA); return; } // rasante pela tela
         if (g == 4) { tremY = sorte.nextBoolean() ? TOPO + 5 : H - 165; tremAviso = .6; recarga = 3.2; SomJogo.tocar(SomJogo.Efeito.ALERTA); return; } // chama o trem maluco (por cima ou por baixo)
         if (g == 0) { double a0 = Math.atan2(naveY - cabo[1], naveX - cabo[0]); for (int i = -3; i <= 3; i++) { double a = a0 + i * .14; tiros.add(new TiroChefe(cabo[0], cabo[1], Math.cos(a) * 290, Math.sin(a) * 290, i == 0, TiroChefe.NOTA, TiroChefe.Movimento.ONDA).comCor(ROXO)); } recarga = 1.2; }
         else if (g == 1) { eclipseX = naveX; eclipseY = naveY; eclipseT = 0; recarga = 1.5; }

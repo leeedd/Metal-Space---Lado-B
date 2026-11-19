@@ -145,7 +145,6 @@ public class Nave {
         }
         SomJogo.tocar(n==1?SomJogo.Efeito.DISPERSAO:n==2?SomJogo.Efeito.NUCLEAR:SomJogo.Efeito.TIRO,x);
         if (n == 1) {
-            int[] nArray;
             int[] nArray2;
             if (this.rajadaMorgath) {
                 int[] nArray3 = new int[5];
@@ -162,7 +161,7 @@ public class Nave {
                 nArray2 = nArray4;
                 nArray4[2] = 17;
             }
-            for (int n2 : nArray = nArray2) {
+            for (int n2 : nArray2) {
                 this.misseis.add(new Missel((int)this.x + 40, (int)this.y + 18, 1, n2));
             }
             this.recarga = 0.52 * this.perfil().intervalo / 0.28;

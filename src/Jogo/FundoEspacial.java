@@ -9,20 +9,16 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.RadialGradientPaint;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.Random;
 
 public final class FundoEspacial {
-    private static final double VELOCIDADE_TEXTURA = 19.0;
     private static final double[] VELOCIDADES = new double[]{31.0, 76.0, 150.0};
     private static final int[] QUANTIDADES = new int[]{62, 39, 21};
     private final Image cenarioAbismo = Assets.imagem("abismo_cenario_091.png");
-    private final Image textura;
     private final Image atlasUniversos = Assets.imagem("universos_096.png");
     private double chegada;
-    private final BufferedImage nebulosa = FundoEspacial.criarNebulosa();
     private final Estrela[][] estrelas = new Estrela[3][];
     private final double[][] posicoesIniciais = new double[3][];
     private final Random sorte = new Random(2019L);
@@ -101,7 +97,6 @@ public final class FundoEspacial {
     }
 
     FundoEspacial(Image image) {
-        this.textura = image;
         for (int i = 0; i < this.estrelas.length; ++i) {
             this.estrelas[i] = new Estrela[QUANTIDADES[i]];
             this.posicoesIniciais[i] = new double[QUANTIDADES[i]];
@@ -142,6 +137,24 @@ public final class FundoEspacial {
         }
     }
 
+    /** Degrade do fim do Abismo: 16 faixas de 10 px com transparencia min(1, n/6), como era desenhado quadro a quadro. */
+    private BufferedImage degradeAbismo;
+
+    private BufferedImage montarDegradeAbismo(int n6, int n7, int altura) {
+        BufferedImage b = new BufferedImage(160, altura, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = b.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        for (int n = 0; n < 16; ++n) {
+            Graphics2D faixa = (Graphics2D) g.create();
+            faixa.clipRect(n * 10, 0, 10, altura);
+            faixa.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC, Math.min(1.0f, n / 6.0f)));
+            faixa.drawImage(this.cenarioAbismo, 0, 0, 160, altura, n6 * 87 / 100, 0, n6, n7, null);
+            faixa.dispose();
+        }
+        g.dispose();
+        return b;
+    }
+
     public void desenhar(Graphics2D graphics2D) {
         int n;
         int n2;
@@ -160,13 +173,12 @@ public final class FundoEspacial {
         int sw = setor == 0 ? n6 * 3 / 4 : n6 / 4;
         int sh = setor == 0 ? n7 : sw * 528 / 960;
         if (setor != 0) sy += (n7 / 2 - sh) / 2;
+        // blocos do cenario ja escalados (cache): so os que aparecem na tela; os impares sao espelhados
         for (int i = -1; i <= 2; ++i) {
             n2 = i * n3 - n5;
-            if (Math.floorMod(i, 2) == 0) {
-                graphics2D2.drawImage(cenario, n2, 72, n2 + n3, 600, sx, sy, sx + sw, sy + sh, null);
-                continue;
-            }
-            graphics2D2.drawImage(cenario, n2, 72, n2 + n3, 600, sx + sw, sy, sx, sy + sh, null);
+            if (n2 >= 960 || n2 + n3 <= 0) continue;
+            if (Math.floorMod(i, 2) == 0) CacheEscala.desenhar(graphics2D2, cenario, n2, 72, n3, 528, sx, sy, sx + sw, sy + sh, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            else CacheEscala.desenhar(graphics2D2, cenario, n2, 72, n3, 528, sx + sw, sy, sx, sy + sh, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         }
         float f = (float)Math.max(0.0, Math.min(1.0, (this.progresso - 0.38) / 0.62));
         graphics2D2.setComposite(AlphaComposite.getInstance(3, f * 0.48f));
@@ -174,12 +186,10 @@ public final class FundoEspacial {
         graphics2D2.fillRect(0, 72, 960, n4);
         graphics2D2.setComposite(AlphaComposite.getInstance(3, f));
         n2 = (int)(1080.0f - f * 250.0f);
-        for (n = 0; setor == 0 && n < 16; ++n) {
-            Graphics2D estrelaArray = (Graphics2D)graphics2D2.create();
-            estrelaArray.clipRect(n2 + n * 10, 72, 10, n4);
-            estrelaArray.setComposite(AlphaComposite.getInstance(3, f * Math.min(1.0f, (float)n / 6.0f)));
-            estrelaArray.drawImage(this.cenarioAbismo, n2, 72, n2 + 160, 600, n6 * 87 / 100, 0, n6, n7, null);
-            estrelaArray.dispose();
+        // fim do Abismo: as 16 faixas com transparencia crescente ja montadas numa imagem so (antes eram 16 desenhos por quadro)
+        if (setor == 0 && f > 0) {
+            if (this.degradeAbismo == null) this.degradeAbismo = montarDegradeAbismo(n6, n7, n4);
+            graphics2D2.drawImage(this.degradeAbismo, n2, 72, null);
         }
         graphics2D2.setComposite(AlphaComposite.SrcOver);
         desenharAneis(graphics2D2);
@@ -207,25 +217,6 @@ public final class FundoEspacial {
         graphics2D2.dispose();
     }
 
-    private static BufferedImage criarNebulosa() {
-        int n = 320;
-        int n2 = 176;
-        BufferedImage bufferedImage = new BufferedImage(n, n2, 1);
-        for (int i = 0; i < n2; ++i) {
-            for (int j = 0; j < n; ++j) {
-                double d = (double)j * Math.PI * 2.0 / (double)n;
-                double d2 = (double)i / (double)n2;
-                double d3 = Math.exp(-Math.pow((d2 - 0.5 - 0.16 * Math.sin(d * 2.0)) / 0.25, 2.0));
-                double d4 = 0.5 + 0.22 * Math.sin(d * 3.0 + d2 * 12.0) + 0.16 * Math.cos(d * 7.0 - d2 * 19.0) + 0.08 * Math.sin(d * 13.0 + d2 * 31.0);
-                double d5 = Math.max(0.0, d4) * d3;
-                int n3 = 5 + (int)(d5 * (15.0 + 8.0 * Math.sin(d)));
-                int n4 = 8 + (int)(d5 * 18.0);
-                int n5 = 20 + (int)(d5 * 46.0);
-                bufferedImage.setRGB(j, i, n3 << 16 | n4 << 8 | n5);
-            }
-        }
-        return bufferedImage;
-    }
 
     public void reiniciar() {
         this.setor = 0; this.chegada = 0;
@@ -265,40 +256,13 @@ public final class FundoEspacial {
 
     private static final class Planeta {
         double x;
-        final int y;
         final int raio;
-        final Color luz;
-        final Color sombra;
-        final boolean aneis;
 
         Planeta(double d, int n, int n2, Color color, Color color2, boolean bl) {
             this.x = d;
-            this.y = n;
             this.raio = n2;
-            this.luz = color;
-            this.sombra = color2;
-            this.aneis = bl;
         }
 
-        void desenhar(Graphics2D graphics2D) {
-            int n = (int)this.x;
-            int n2 = this.y;
-            Graphics2D graphics2D2 = (Graphics2D)graphics2D.create();
-            graphics2D2.setComposite(AlphaComposite.getInstance(3, 0.52f));
-            if (this.aneis) {
-                graphics2D2.setColor(new Color(225, 168, 122, 115));
-                graphics2D2.setStroke(new BasicStroke(Math.max(2, this.raio / 12)));
-                graphics2D2.drawOval(n - this.raio - this.raio / 2, n2 - this.raio / 3, 3 * this.raio, this.raio * 2 / 3);
-            }
-            graphics2D2.setPaint(new RadialGradientPaint((float)n - (float)this.raio / 3.0f, (float)n2 - (float)this.raio / 3.0f, (float)this.raio * 1.55f, new float[]{0.0f, 0.65f, 1.0f}, new Color[]{this.luz, this.sombra, new Color(5, 12, 32)}));
-            graphics2D2.fillOval(n - this.raio, n2 - this.raio, this.raio * 2, this.raio * 2);
-            graphics2D2.setColor(new Color(155, 216, 232, 45));
-            for (int i = 0; i < 5; ++i) {
-                int n3 = n2 - this.raio / 2 + i * this.raio / 4;
-                graphics2D2.drawArc(n - this.raio + 9, n3, this.raio * 2 - 18, this.raio / 3, 0, 180);
-            }
-            graphics2D2.dispose();
-        }
     }
 }
 

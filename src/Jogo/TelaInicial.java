@@ -62,7 +62,7 @@ extends JPanel {
             @Override
             public void keyReleased(KeyEvent e){teclasAudio.remove(e.getKeyCode());}
             @Override public void keyPressed(KeyEvent keyEvent) {
-                int n = keyEvent.getKeyCode();if((n==120||n==121)&&!teclasAudio.add(n))return;if(PainelSom.tecla(n)){repaint();return;}if(n>=37&&n<=40)SomJogo.tocar(SomJogo.Efeito.MENU);
+                int n = keyEvent.getKeyCode();if((n==KeyEvent.VK_F9||n==KeyEvent.VK_F10||n==KeyEvent.VK_F11||n==KeyEvent.VK_F12)&&!teclasAudio.add(n))return;if(PainelSom.tecla(n)){repaint();return;}if(n>=37&&n<=40)SomJogo.tocar(SomJogo.Efeito.MENU);
                 if(verPlacar){if(n==27||n==KeyEvent.VK_H)verPlacar=false;repaint();return;}
                 if(n==KeyEvent.VK_H){verPlacar=true;repaint();return;}
                 if (n == 27) {
@@ -303,9 +303,6 @@ extends JPanel {
                 graphics2D.setStroke(new BasicStroke(2.25f));
                 graphics2D.setColor(new Color(255, 142, 73, 233));
                 graphics2D.drawRoundRect(rectangle.x, rectangle.y, rectangle.width, rectangle.height, 9, 9);
-                graphics2D.setColor(new Color(1, 7, 18, 220));
-                graphics2D.fillRoundRect(23, 553, 66, 26, 5, 5);
-                TelaInicial.texto(graphics2D, "0.9.8 ALPHA", 31, 572, 15, new Color(217, 227, 242));
                 break;
             }
             case HANGAR: {
@@ -366,14 +363,21 @@ extends JPanel {
                     TelaInicial.texto(graphics2D, "BASE ORIGINAL DO PROJETO DE FACULDADE", 207, 285, 16, Color.WHITE);
                     TelaInicial.texto(graphics2D, "VISUAL: CONCEITO APROVADO PELO CRIADOR", 207, 328, 16, Color.WHITE);
                     TelaInicial.texto(graphics2D, "A M\u00daSICA NUNCA MORRE NO ESPA\u00c7O", 207, 373, 17, Color.CYAN);
+                    TelaInicial.texto(graphics2D, "RADIO: FFMPEG (LGPL 3) - VEJA LICENCAS.TXT", 207, 420, 13, new Color(150, 165, 185));
                 }
                 TelaInicial.texto(graphics2D, "ESC OU CLIQUE: VOLTAR", 207, 475, 17, Color.LIGHT_GRAY);
                 break;
             }
         }
-        if(pagina==Pagina.INICIO){graphics2D.setColor(Color.WHITE);graphics2D.setFont(new Font("Monospaced",1,14));graphics2D.drawString("[H] PLACAR DAS LENDAS",115,574);}
+        if(pagina==Pagina.INICIO){ // rodape: versao e placar na mesma linha, atalhos embaixo, numa faixa so
+            graphics2D.setFont(new Font("Monospaced",1,14));java.awt.FontMetrics fm=graphics2D.getFontMetrics();
+            String versao="0.9.8 ALPHA",placarTxt="[H] PLACAR DAS LENDAS";int xPlacar=26+fm.stringWidth(versao)+18;
+            int larg=Math.max(xPlacar+fm.stringWidth(placarTxt),26+graphics2D.getFontMetrics(new Font("Monospaced",1,12)).stringWidth("F9: OPCOES   F10: SILENCIAR"))-16+12;
+            graphics2D.setColor(new Color(1,7,18,215));graphics2D.fillRoundRect(16,548,larg,48,6,6);
+            graphics2D.setColor(new Color(90,120,170,170));graphics2D.drawRoundRect(16,548,larg-1,47,6,6);
+            textoContornado(graphics2D,versao,26,568,new Color(217,227,242));textoContornado(graphics2D,placarTxt,xPlacar,568,Color.WHITE);}
         if(verPlacar)Placar.desenhar(graphics2D,placar.ler(),"ESC / H: VOLTAR");
-        graphics2D.setFont(new java.awt.Font("Monospaced",java.awt.Font.BOLD,12));graphics2D.setColor(java.awt.Color.CYAN);graphics2D.drawString("F9: OPCOES   F10: SILENCIAR",24,587);PainelSom.desenhar(graphics2D);graphics2D.dispose();
+        graphics2D.setFont(new java.awt.Font("Monospaced",java.awt.Font.BOLD,12));textoContornado(graphics2D,"F9: OPCOES   F10: SILENCIAR",26,588,java.awt.Color.CYAN);PainelSom.desenhar(graphics2D);graphics2D.dispose();
     }
 
     private void desenharLuzesInicio(Graphics2D graphics2D) {
@@ -402,6 +406,13 @@ extends JPanel {
         graphics2D2.dispose();
     }
 
+    /** Texto com contorno preto de 1 pixel, legivel sobre a arte (usa a fonte ja escolhida). */
+    private static void textoContornado(Graphics2D g, String s, int x, int y, Color cor) {
+        g.setColor(Color.BLACK);
+        for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) if (dx != 0 || dy != 0) g.drawString(s, x + dx, y + dy);
+        g.setColor(cor); g.drawString(s, x, y);
+    }
+
     private static void texto(Graphics2D graphics2D, String string, int n, int n2, int n3, Color color) {
         graphics2D.setFont(new Font("Monospaced", 1, n3));
         graphics2D.setColor(color);
@@ -417,6 +428,7 @@ extends JPanel {
             jFrame.setContentPane(telaInicial);
             jFrame.revalidate(); jFrame.repaint();
             telaInicial.requestFocusInWindow();
+            RadioMetal.retomar(); // volta a radio ou a playlist que o jogador deixou ligada
         }));
         MusicaJogo.trocarSeDisponivel("abertura"); // musicas/abertura.wav se o jogador tiver; senao a trilha epica original
         jFrame.setContentPane(abertura);

@@ -4,7 +4,7 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.prefs.Preferences;
 
-/** Menu de Opcoes em pixel art (F9 ou OPCOES na tela inicial): abas Audio, Jogo e Controles. */
+/** Menu de Opcoes em pixel art (F9 ou OPCOES na tela inicial): abas Audio (com a Radio), Jogo e Controles. */
 final class PainelSom {
  private static boolean aberto;private static int aba,linha;
  private static final BufferedImage MOLDURA=img("ui_moldura"),TOGGLE_ON=img("ui_toggle_on"),TOGGLE_OFF=img("ui_toggle_off");
@@ -19,7 +19,7 @@ final class PainelSom {
  private static boolean dicas=ler("dicas",true),tremor=ler("tremor",true);
 
  static boolean aberto(){return aberto;}
- static void abrir(){aberto=true;aba=0;linha=0;SomJogo.tocar(SomJogo.Efeito.MENU);}
+ static void abrir(){aberto=true;aba=0;linha=0;TelaRadio.fechar();SomJogo.tocar(SomJogo.Efeito.MENU);}
  /** Mostrar as teclas de atalho (C, X) junto a barra de energia. */
  static boolean dicasTeclas(){return dicas;}
  /** Permitir tremor de tela nas explosoes. */
@@ -28,11 +28,15 @@ final class PainelSom {
  static boolean tecla(int k){
   if(k==KeyEvent.VK_F10){SomJogo.alternarMudo();return true;}
   if(k==KeyEvent.VK_F9){if(aberto)aberto=false;else abrir();return true;}
+  // radio: F11 proxima estacao/musica, F12 anterior (em qualquer tela)
+  if(k==KeyEvent.VK_F11){RadioMetal.proxima();return true;}
+  if(k==KeyEvent.VK_F12){RadioMetal.anterior();return true;}
   if(!aberto)return false;
+  if(aba==0&&TelaRadio.aberta()&&k!=KeyEvent.VK_TAB){TelaRadio.tecla(k);return true;}
   if(k==KeyEvent.VK_ESCAPE){aberto=false;return true;}
-  if(k==KeyEvent.VK_TAB||k==KeyEvent.VK_Q||k==KeyEvent.VK_E){aba=Math.floorMod(aba+(k==KeyEvent.VK_Q?-1:1),3);linha=0;SomJogo.tocar(SomJogo.Efeito.MENU);return true;}
-  if(k>=KeyEvent.VK_1&&k<=KeyEvent.VK_3){aba=k-KeyEvent.VK_1;linha=0;SomJogo.tocar(SomJogo.Efeito.MENU);return true;}
-  int linhas=aba==0?3:aba==1?2:0;
+  if(k==KeyEvent.VK_TAB||k==KeyEvent.VK_Q||k==KeyEvent.VK_E){aba=Math.floorMod(aba+(k==KeyEvent.VK_Q?-1:1),3);linha=0;TelaRadio.fechar();SomJogo.tocar(SomJogo.Efeito.MENU);return true;}
+  if(k>=KeyEvent.VK_1&&k<=KeyEvent.VK_3){aba=k-KeyEvent.VK_1;linha=0;TelaRadio.fechar();SomJogo.tocar(SomJogo.Efeito.MENU);return true;}
+  int linhas=aba==0?4:aba==1?2:0;
   if(linhas>0&&(k==KeyEvent.VK_UP||k==KeyEvent.VK_W)){linha=Math.floorMod(linha-1,linhas);SomJogo.tocar(SomJogo.Efeito.MENU);}
   if(linhas>0&&(k==KeyEvent.VK_DOWN||k==KeyEvent.VK_S)){linha=(linha+1)%linhas;SomJogo.tocar(SomJogo.Efeito.MENU);}
   boolean lado=k==KeyEvent.VK_LEFT||k==KeyEvent.VK_RIGHT||k==KeyEvent.VK_A||k==KeyEvent.VK_D,confirma=k==KeyEvent.VK_ENTER||k==KeyEvent.VK_SPACE;
@@ -41,6 +45,7 @@ final class PainelSom {
    if(lado&&linha==0)SomJogo.volumeMusica(SomJogo.musica()+d);
    else if(lado&&linha==1){SomJogo.volumeEfeitos(SomJogo.efeitos()+d);SomJogo.tocar(SomJogo.Efeito.CONFIRMAR);}
    else if((lado||confirma)&&linha==2)SomJogo.alternarMudo();
+   else if((lado||confirma)&&linha==3){TelaRadio.abrir();SomJogo.tocar(SomJogo.Efeito.CONFIRMAR);}
   }else if(aba==1&&(lado||confirma)){
    if(linha==0){dicas=!dicas;gravar("dicas",dicas);}else{tremor=!tremor;gravar("tremor",tremor);}
    SomJogo.tocar(SomJogo.Efeito.CONFIRMAR);
@@ -48,7 +53,7 @@ final class PainelSom {
   return true;
  }
 
- static void desenhar(Graphics2D tela){if(!aberto)return;
+ static void desenhar(Graphics2D tela){if(!aberto){TelaRadio.desenharAviso(tela);return;}
   Graphics2D g=(Graphics2D)tela.create();
   g.setColor(new Color(0,0,0,200));g.fillRect(0,0,960,600);
   if(MOLDURA==null){g.dispose();return;}
@@ -60,16 +65,17 @@ final class PainelSom {
    if(i==aba){if(ABAS[i]!=null)g.drawImage(ABAS[i],ax,ay,aw,ah,null);g.setColor(new Color(255,210,110));g.setStroke(new BasicStroke(2));g.drawRect(ax,ay,aw,ah);g.setStroke(new BasicStroke(1));}
    else{g.setColor(new Color(0,0,0,150));g.fillRect(ax,ay,aw,ah);}
 }
-  texto(g,NOMES_ABAS[aba],480,my+(int)(CONTEUDO.y*ESCALA)+18,13,new Color(255,210,110),true);
+  boolean radio=aba==0&&TelaRadio.aberta();
+  texto(g,radio?"AUDIO > RADIO":NOMES_ABAS[aba],480,my+(int)(CONTEUDO.y*ESCALA)+18,13,new Color(255,210,110),true);
   int cx=mx+(int)(CONTEUDO.x*ESCALA)+18,cy=my+(int)(CONTEUDO.y*ESCALA)+46,cw=(int)(CONTEUDO.width*ESCALA)-36;
-  if(aba==0)audio(g,cx,cy,cw);else if(aba==1)jogo(g,cx,cy,cw);else controles(g,cx,cy,cw);
-  texto(g,aba==2?"TAB / 1-3: ABAS    ESC / F9: VOLTAR":"TAB / 1-3: ABAS   SETAS: AJUSTAR   ESC / F9: VOLTAR",480,my+mh+18,11,new Color(170,180,200),true);
+  if(radio)TelaRadio.desenhar(g,cx,cy-8,cw);else if(aba==0)audio(g,cx,cy,cw);else if(aba==1)jogo(g,cx,cy,cw);else controles(g,cx,cy,cw);
+  texto(g,radio?"ENTER: TOCAR   V: COLAR LINK   DEL: REMOVER   ESC: VOLTAR":aba==2?"TAB / 1-3: ABAS    ESC / F9: VOLTAR":"TAB / 1-3: ABAS   SETAS: AJUSTAR   ESC / F9: VOLTAR",480,my+mh+18,11,new Color(170,180,200),true);
   g.dispose();
  }
 
  private static void audio(Graphics2D g,int x,int y,int w){
-  String[] nomes={"MUSICA","EFEITOS","SILENCIAR TUDO"};int[] vol={SomJogo.musica(),SomJogo.efeitos()};
-  for(int i=0;i<3;i++){int ly=y+i*58;boolean sel=i==linha;
+  String[] nomes={"MUSICA","EFEITOS","SILENCIAR TUDO","RADIO"};int[] vol={SomJogo.musica(),SomJogo.efeitos()};
+  for(int i=0;i<4;i++){int ly=y+i*54;boolean sel=i==linha;
    texto(g,(sel?"> ":"  ")+nomes[i],x,ly+16,15,sel?new Color(255,210,110):Color.WHITE,false);
    if(i<2){BufferedImage s=SomJogo.mudo()?SLIDER[2]:SLIDER[i];int sw=250,sh=36,sx=x+w-sw,sy=ly-4;if(s!=null)g.drawImage(s,sx,sy,sw,sh,null);
     // gomos de volume desenhados por cima do trilho vazio (10 passos)
@@ -77,8 +83,9 @@ final class PainelSom {
     int n=10,gw=(tw-(n-1)*2)/n,cheios=SomJogo.mudo()?0:Math.round(vol[i]/10f);Color c=i==0?new Color(40,150,255):new Color(235,50,50);
     for(int k=0;k<n;k++){g.setColor(k<cheios?c:new Color(32,38,50));g.fillRect(tx+k*(gw+2),ty,gw,th);if(k<cheios){g.setColor(new Color(255,255,255,120));g.fillRect(tx+k*(gw+2),ty,gw,1);}}
     texto(g,SomJogo.mudo()?"MUDO":vol[i]+"%",sx-12,ly+16,13,new Color(170,190,210),false,true);
-   }else interruptor(g,x+w-90,ly-6,SomJogo.mudo());}
-  texto(g,"F10: SILENCIAR A QUALQUER MOMENTO",x,y+190,11,new Color(140,150,170),false);
+   }else if(i==2)interruptor(g,x+w-90,ly-6,SomJogo.mudo());
+   else{g.setFont(new Font(Font.MONOSPACED,Font.BOLD,13));texto(g,TelaRadio.cortar(g,RadioMetal.origem()+"  >",w-130),x+w,ly+16,13,new Color(120,200,255),false,true);}}
+  texto(g,"F10: SILENCIAR   F11 / F12: TROCAR RADIO OU MUSICA",x,y+222,11,new Color(140,150,170),false);
  }
  private static void jogo(Graphics2D g,int x,int y,int w){
   String[] nomes={"DICAS DE TECLAS NA TELA","TREMOR DE TELA"};String[] ajuda={"Mostra C (usar) e X (trocar) junto da barra de energia.","Sacode a tela nas explosoes grandes e chefes."};boolean[] v={dicas,tremor};
@@ -87,7 +94,7 @@ final class PainelSom {
   texto(g,"O PROGRESSO E AS COMPRAS SAO SALVOS SOZINHOS.",x,y+190,11,new Color(140,150,170),false);
  }
  private static void controles(Graphics2D g,int x,int y,int w){
-  String[][] t={{"SETAS / WASD","PILOTAR"},{"ESPACO","ATIRAR"},{"F","TROCAR ARMA"},{"Q / E","GELO / FOGO"},{"V","CONVERGENCIA"},{"C","USAR PODER DO CHEFE"},{"X","PROXIMO PODER"},{"SHIFT","TRUQUE DA NAVE"},{"1 - 8","ESCOLHER PODER"},{"R","USAR RESERVA"},{"ENTER / P / ESC","PAUSA"},{"F9","OPCOES"},{"F10","SILENCIAR"}};
+  String[][] t={{"SETAS / WASD","PILOTAR"},{"ESPACO","ATIRAR"},{"F","TROCAR ARMA"},{"Q / E","GELO / FOGO"},{"V","CONVERGENCIA"},{"C","USAR PODER DO CHEFE"},{"X","PROXIMO PODER"},{"SHIFT","TRUQUE DA NAVE"},{"1 - 8","ESCOLHER PODER"},{"R","USAR RESERVA"},{"ENTER / P / ESC","PAUSA"},{"F9","OPCOES"},{"F10","SILENCIAR"},{"F11 / F12","TROCAR RADIO"}};
   for(int i=0;i<t.length;i++){int col=i/7,lin=i%7,kx=x+col*(w/2),ky=y+lin*27;
    g.setFont(new Font(Font.MONOSPACED,Font.BOLD,12));int kw=Math.max(26,g.getFontMetrics().stringWidth(t[i][0])+14);
    g.setColor(new Color(34,38,50));g.fillRoundRect(kx,ky,kw,22,6,6);g.setColor(new Color(150,160,180));g.drawRoundRect(kx,ky,kw,22,6,6);g.setColor(new Color(90,20,24));g.drawLine(kx+3,ky+21,kx+kw-3,ky+21);

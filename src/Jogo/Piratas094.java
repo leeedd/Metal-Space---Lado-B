@@ -12,7 +12,6 @@ final class Piratas094 {
   int cw=EVO.getWidth()/6,ch=EVO.getHeight()/3,col=coluna>=0?coluna:c==Alien.Classe.ESQUADRAO?1:c==Alien.Classe.TANQUE?2:c==Alien.Classe.LASER?3:c==Alien.Classe.KAMIKAZE?4:0;
   int w=coluna==5?140:122,h=w*ch/cw,bob=(int)Math.round(Math.sin(t*3+x*.01)*2);
   int dx=x+32-w/2,dy=y+28-h/2+bob;
-  Graphics2D a=(Graphics2D)g.create();a.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-  a.drawImage(EVO,dx,dy,dx+w,dy+h,col*cw,versao*ch,col*cw+cw,versao*ch+ch,null);a.dispose();}
+  CacheEscala.desenhar(g,EVO,dx,dy,w,h,col*cw,versao*ch,col*cw+cw,versao*ch+ch,RenderingHints.VALUE_INTERPOLATION_BILINEAR);}
  private Piratas094(){}
 }

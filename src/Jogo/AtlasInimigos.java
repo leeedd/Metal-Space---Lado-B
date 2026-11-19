@@ -99,9 +99,7 @@ public final class AtlasInimigos {
     static void integrante(Graphics2D g, BufferedImage arte, int x, int y, int quadro) {
         int fw = arte.getWidth() / 4; double e = Math.min(200.0 / arte.getHeight(), 260.0 / fw); int h = (int) (arte.getHeight() * e), w = (int) (fw * e);
         int x0 = x - (int) (fw * .67 * e), y0 = y - h / 2;
-        Graphics2D a = (Graphics2D) g.create();
-        a.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        a.drawImage(arte, x0, y0, x0 + w, y0 + h, quadro * fw, 0, quadro * fw + fw, arte.getHeight(), null); a.dispose();
+        CacheEscala.desenhar(g, arte, x0, y0, w, h, quadro * fw, 0, quadro * fw + fw, arte.getHeight(), java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
     }
     /** Iris da sentinela (sentinela_iris.png: normal e rachada): o miolo vermelho entra no olho e acompanha o piloto. */
     private static final BufferedImage[] IRIS = new BufferedImage[2];

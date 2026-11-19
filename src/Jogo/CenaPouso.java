@@ -45,7 +45,6 @@ final class CenaPouso {
     private double tEscolha;
     private BufferedImage flavio = FLAVIO, fasFundo, fasLonge, fasMeio, fasPerto;
     /** Onde o piloto fica no meio da galera. */
-    private static final int PILOTO_X = 600;
 
     /** Palcos abertos: bit por banda (1 a 7), ganho com o passe de cada uma. A Lula e chefe generico, nao tem show. */
     private final int abertos;
@@ -193,7 +192,6 @@ final class CenaPouso {
     private static final BufferedImage CABINE_PADRAO = janela(ler("cabine_wenger.png"));
     static { for (int i = 0; i < 5; i++) { CABINES[i] = janela(ler("cabine_" + i + ".png")); LUZES[i] = luzes(CABINES[i]); } }
     /** Tubo do nucleo em cada cabine: centro x, centro y, largura, altura (fracoes da tela) e cor do brilho. */
-    private static final double[][] NUCLEO = {{.94, .48, .07, .25, 110, 180, 255}, null, null, null, null};
     /** Luzes da propria arte da cabine: vermelhas (piscam em 3 grupos) e telas verdes (tremulam). */
     private static BufferedImage[] luzes(BufferedImage a) {
         if (a == null) return null;
@@ -319,7 +317,6 @@ final class CenaPouso {
 
     /** Heliponto: a nave desce no H (parte 1); o Wenger desce, tira o macacao e sobe a escadinha do palco (parte 2). */
     private void cenaHeliponto(Graphics2D g, double tl, boolean desce) {
-        int W = Config.LARGURA, H = Config.ALTURA;
         fundo(g, HELIPONTO, tl + (desce ? 4.6 : 0), 11.8, 1.2, 1.22, 0, .7);
         BufferedImage frente = naveFrente(desce ? tl : -1);
         int cx = 700, chao = 515, fh = 245;
@@ -578,56 +575,7 @@ final class CenaPouso {
         q.setStroke(new java.awt.BasicStroke(2)); q.setColor(Color.WHITE); q.draw(forma); q.dispose();
     }
 
-    /** Saida da dobra espacial: tunel de luz, clarao e a nave chegando de frente. */
-    private void cenaDobra(Graphics2D g, double tl) {
-        int W = Config.LARGURA, H = Config.ALTURA, cx = W / 2, cy = H / 2;
-        java.util.Random r = new java.util.Random(5);
-        double vel = tl < 1.2 ? 1 : Math.max(0, 1 - (tl - 1.2) * 1.5);
-        for (int k = 0; k < 260; k++) {
-            double an = r.nextDouble() * Math.PI * 2, d0 = (r.nextDouble() * 600 + tl * 900 * (.3 + vel)) % 620, len = 6 + vel * 90;
-            int c = 140 + r.nextInt(110); g.setColor(new Color(c / 2, c * 3 / 4, c));
-            g.setStroke(new java.awt.BasicStroke(1 + (float) vel * 2));
-            g.drawLine(cx + (int) (Math.cos(an) * d0), cy + (int) (Math.sin(an) * d0), cx + (int) (Math.cos(an) * (d0 + len)), cy + (int) (Math.sin(an) * (d0 + len)));
-        }
-        if (tl > 1.0 && tl < 1.6) { g.setColor(new Color(220, 240, 255, (int) (255 * (1 - Math.abs(tl - 1.25) / .35 > 0 ? 1 - Math.abs(tl - 1.25) / .35 : 0)))); g.fillRect(0, 0, W, H); }
-        BufferedImage frente = FRENTE[Math.max(0, Math.min(4, modelo))];
-        if (frente != null && tl > 1.1) {
-            double z = .25 + Math.min(1, (tl - 1.1) / 1.6) * .9; int fh = (int) (240 * z), fw = frente.getWidth() * fh / frente.getHeight();
-            int oy = (int) (Math.sin(tl * 3) * 6);
-            g.drawImage(frente, cx - fw / 2, cy - fh / 2 + oy, fw, fh, null);
-            g.setColor(new Color(120, 200, 255, 160)); for (int k = -1; k <= 1; k += 2) g.fillOval(cx + k * fw / 4 - 8, cy + fh / 2 - 20 + oy, 16, 16);
-        }
-    }
 
-    /** O festival visto de cima: palco, mar de 100 mil cabecas, tendas, fachos de luz e o heliponto; a nave chega. */
-    private void cenaAerea(Graphics2D g, double tl) {
-        int W = Config.LARGURA, H = Config.ALTURA;
-        g.setColor(new Color(16, 22, 18)); g.fillRect(0, 0, W, H);
-        java.util.Random r = new java.util.Random(3);
-        for (int k = 0; k < 60; k++) { g.setColor(new Color(22 + r.nextInt(10), 32 + r.nextInt(12), 24)); g.fillRect(r.nextInt(W), r.nextInt(H), 40 + r.nextInt(80), 30 + r.nextInt(60)); }
-        // palco no topo, com telao e luzes piscando
-        g.setColor(new Color(40, 36, 50)); g.fillRect(300, 160, 360, 70); g.setColor(new Color(10, 8, 14)); g.fillRect(380, 166, 200, 44);
-        for (int k = 0; k < 10; k++) { boolean on = (int) (tl * 6 + k) % 3 == 0; g.setColor(on ? (k % 2 == 0 ? new Color(255, 60, 90) : new Color(180, 80, 255)) : new Color(60, 40, 60)); g.fillOval(310 + k * 35, 216, 10, 10); }
-        Image e = CamisaShow.emblema(banda == FESTIVAL || banda == COMUM ? 1 + (int) (tl / 1.2) % 7 : banda);
-        if (e != null) { double es = Math.min(190.0 / e.getWidth(null), 44.0 / e.getHeight(null)); int ew = (int) (e.getWidth(null) * es), eh = (int) (e.getHeight(null) * es); g.drawImage(e, 480 - ew / 2, 188 - eh / 2, ew, eh, null); }
-        // fachos de luz varrendo a galera
-        for (int k = 0; k < 4; k++) { double a = Math.sin(tl * 1.3 + k * 1.6); int x0 = 360 + k * 80; g.setColor(new Color(k % 2 == 0 ? 255 : 160, 70, 230, 34)); g.fillPolygon(new int[]{x0, x0 + (int) (a * 250) - 60, x0 + (int) (a * 250) + 60}, new int[]{230, 470, 470}, 3); }
-        // o mar de gente em leque na frente do palco (cabecas vistas de cima)
-        for (int k = 0; k < 9000; k++) {
-            double v = Math.sqrt(r.nextDouble()), y = 236 + v * 220, meia = 160 + v * 260, x = 480 + (r.nextDouble() * 2 - 1) * meia;
-            int c = r.nextInt(6); g.setColor(c == 0 ? new Color(150, 70, 30) : c == 1 ? new Color(170, 140, 70) : c == 2 ? new Color(220, 170, 130) : new Color(25 + r.nextInt(30), 18, 22));
-            int pulo = (int) (Math.sin(tl * 8 + k) * .8); g.fillRect((int) x, (int) y + pulo, 3, 3);
-        }
-        // tendas e o heliponto ao lado
-        for (int k = 0; k < 6; k++) { int tx = k < 3 ? 60 + k * 70 : 740 + (k - 3) * 70, ty = 170 + (k % 3) * 34; g.setColor(k % 2 == 0 ? new Color(160, 40, 60) : new Color(90, 50, 150)); g.fillPolygon(new int[]{tx, tx + 25, tx + 50}, new int[]{ty + 30, ty, ty + 30}, 3); }
-        int hx = 840, hy = 390; g.setColor(new Color(60, 60, 70)); g.fillOval(hx - 60, hy - 60, 120, 120); g.setColor(new Color(240, 200, 40)); g.setStroke(new java.awt.BasicStroke(4)); g.drawOval(hx - 50, hy - 50, 100, 100);
-        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 46)); g.drawString("H", hx - 16, hy + 16);
-        // a nave chegando por cima, com a sombra no chao
-        BufferedImage frente = FRENTE[Math.max(0, Math.min(4, modelo))];
-        double c = suave(Math.min(1, tl / 3.0)); int nx = (int) (990 - c * 150), ny = (int) (120 + c * 270);
-        g.setColor(new Color(0, 0, 0, 90)); g.fillOval(nx - 30 + 30, ny + 20, 60, 22);
-        if (frente != null) { int fh = 70, fw = frente.getWidth() * fh / frente.getHeight(); g.drawImage(frente, nx - fw / 2, ny - fh / 2, fw, fh, null); }
-    }
 
     /** Quadro 1: pista de pouso fora do festival. O show brilha no horizonte. */
     private void quadroPouso(Graphics2D g) {
@@ -736,7 +684,6 @@ final class CenaPouso {
     }
 
     /** O emblema da banda escolhida acende no telao, piscando como lampada velha antes de firmar. */
-    private void telao(Graphics2D g, int W, int H) { telao(g, W, H, 0); }
     private void telao(Graphics2D g, int W, int H, int dy) {
         // festival completo: o telao passa pelos emblemas de todas as bandas
         Image e = CamisaShow.emblema(banda == FESTIVAL || banda == COMUM ? 1 + (int) (t / 1.5) % 7 : banda);
@@ -903,14 +850,5 @@ final class CenaPouso {
         if (avisoFechado > 0) g.setColor(new Color(255, 110, 100)); g.drawString(dica, (W - g.getFontMetrics().stringWidth(dica)) / 2, H - 30);
         if (tEscolha < .4) { g.setComposite(AlphaComposite.SrcOver.derive((float) (1 - tEscolha / .4))); g.setColor(Color.BLACK); g.fillRect(0, 0, W, H); }
         g.dispose();
-    }
-    /** Plaquinha de nome em pixel: caixa preta com borda vermelha e setinha para baixo. */
-    private static void etiqueta(Graphics2D g, String nome, int cx, int y, float a) {
-        Graphics2D q = (Graphics2D) g.create(); q.setComposite(AlphaComposite.SrcOver.derive(a));
-        q.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.BOLD, 16));
-        int w = q.getFontMetrics().stringWidth(nome) + 16, x = cx - w / 2;
-        q.setColor(new Color(12, 8, 10)); q.fillRect(x, y, w, 24); q.fillPolygon(new int[]{cx - 7, cx + 7, cx}, new int[]{y + 24, y + 24, y + 32}, 3);
-        q.setColor(new Color(200, 40, 40)); q.drawRect(x, y, w, 24); q.drawRect(x + 2, y + 2, w - 4, 20);
-        q.setColor(new Color(250, 235, 200)); q.drawString(nome, x + 8, y + 18); q.dispose();
     }
 }

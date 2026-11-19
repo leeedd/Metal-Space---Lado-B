@@ -3,7 +3,6 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.lang.reflect.Method;
 import java.util.*;
 import javax.imageio.ImageIO;
 public final class TesteViagem096 {

@@ -11,12 +11,32 @@ final class ProgressaoNave {
  private final int[][] equipadas={{-1,-1,-1,-1},{-1,-1,-1,-1},{-1,-1,-1,-1},{-1,-1,-1,-1},{-1,-1,-1,-1}};
  static final int[] ORDEM={8,2,3,4,5,6,7,1};
  ProgressaoNave(){this(Preferences.userNodeForPackage(ProgressaoNave.class).node("progressao098"));for(int i=0;i<8;i++)if(ProgressoJogo.temTrofeu(ORDEM[i]))chaves|=1<<i;}
- ProgressaoNave(Preferences p){prefs=p;if(p!=null)try{ler(p.get("perfil",""));}catch(SecurityException ignored){}}
+ ProgressaoNave(Preferences p){prefs=p;if(p!=null)try{gravarPendente(p);ler(p.get("perfil",""));}catch(SecurityException ignored){}}
  ProgressaoNave copiaTeste(){ProgressaoNave c=new ProgressaoNave(null);c.ler(serializar());return c;}
  private String serializar(){String base= saldo+";"+tanques+";"+celulas+";"+chaves+";"+blindagem+";"+gelo+";"+fogo+";"+(retencao?1:0)+";"+(reator?1:0)+";"+fusao+";"+carga[0]+";"+carga[1]+";"+carga[2]+";"+carga[3];StringBuilder b=new StringBuilder(base);for(int[] nave:pecas)for(int n:nave)b.append(';').append(n);b.append(';').append(nucleos);b.append(';').append(pecasCompradas);b.append(';').append(cargasAmuleto);for(int[] e:equipadas)for(int v:e)b.append(';').append(v);return b.toString();}
  private void ler(String s){try{String[] a=s.split(";");if(a.length<14)return;int[] v=new int[14];for(int i=0;i<14;i++)v[i]=Integer.parseInt(a[i]);saldo=lim(v[0],0,9999999);tanques=v[1]&15;celulas=lim(v[2],0,99);chaves=v[3]&255;blindagem=lim(v[4],0,3);gelo=lim(v[5],0,3);fogo=lim(v[6],0,3);retencao=v[7]==1;reator=v[8]==1;fusao=lim(v[9],0,8);for(int i=0;i<4;i++)carga[i]=temTanque(i)?lim(v[10+i],0,100):0;for(int m=0;m<5;m++)for(int k=0;k<3;k++)if(a.length>14+m*3+k)pecas[m][k]=lim(Integer.parseInt(a[14+m*3+k]),0,k==0?8:3);if(a.length>29)nucleos=Integer.parseInt(a[29])&255;if(a.length>30)pecasCompradas=Integer.parseInt(a[30]);if(a.length>31)cargasAmuleto=lim(Integer.parseInt(a[31]),1,CARGAS_AMULETO);for(int m=0;m<5;m++)for(int k=0;k<4;k++)if(a.length>32+m*4+k){int pv=Integer.parseInt(a[32+m*4+k]);Pecas p=Pecas.obter(pv);equipadas[m][k]=p!=null&&p.encaixe==k&&p.serveEm(m)&&temPeca(pv)?pv:-1;}}catch(NumberFormatException ignored){}}
  private static int lim(int n,int min,int max){return Math.max(min,Math.min(max,n));}
- private void salvar(){if(prefs!=null)try{prefs.put("perfil",serializar());prefs.flush();}catch(java.util.prefs.BackingStoreException|SecurityException e){System.err.println("Nao foi possivel persistir inventario: "+e.getMessage());}}
+ /**
+  * Gravar no registro do Windows a cada credito travava o quadro do jogo. Agora salvar() so anota a mudanca;
+  * uma thread junta as mudancas e grava ~1 s depois. Quem for ler o mesmo perfil (construtor) e o fim do jogo
+  * gravam o que estiver pendente antes, entao nada se perde e quem le ve sempre o ultimo estado.
+  */
+ private static final java.util.Map<Preferences,String> PENDENTES=new java.util.LinkedHashMap<>();
+ private static volatile Thread gravador;
+ private void salvar(){if(prefs==null)return;String s=serializar();synchronized(PENDENTES){PENDENTES.put(prefs,s);PENDENTES.notifyAll();}if(gravador==null)iniciarGravador();}
+ /** Trava propria (nao a da gravacao): o quadro do jogo nunca espera o registro do Windows. */
+ private static void iniciarGravador(){synchronized(PENDENTES){
+  if(gravador!=null)return;
+  gravador=new Thread(()->{while(true){try{synchronized(PENDENTES){while(PENDENTES.isEmpty())PENDENTES.wait();}Thread.sleep(1000);}catch(InterruptedException e){return;}gravarTudo();}},"MetalSpace-Progresso");
+  gravador.setDaemon(true);gravador.start();
+  Runtime.getRuntime().addShutdownHook(new Thread(ProgressaoNave::gravarTudo,"MetalSpace-Progresso-Fim"));
+ }}
+ /** Grava agora tudo o que estiver pendente (fim do jogo, ou antes de alguem ler). */
+ static void gravarTudo(){java.util.List<Preferences> nos;synchronized(PENDENTES){nos=new java.util.ArrayList<>(PENDENTES.keySet());}for(Preferences p:nos)gravarPendente(p);}
+ private static void gravarPendente(Preferences p){
+  synchronized(ProgressaoNave.class){String s;synchronized(PENDENTES){s=PENDENTES.remove(p);}if(s==null)return;
+   try{p.put("perfil",s);p.flush();}catch(java.util.prefs.BackingStoreException|SecurityException|IllegalStateException e){System.err.println("Nao foi possivel persistir inventario: "+e.getMessage());}}
+ }
  /** Nucleos de Casco: um escondido em cada setor, +2 de casco maximo cada (permanente). */
  /** Amuleto do Metal God: aguenta 3 golpes que roubariam uma arma, depois se despedaca e precisa ser comprado de novo. */
  static final int CARGAS_AMULETO=3; private int cargasAmuleto=CARGAS_AMULETO;

@@ -30,7 +30,6 @@ public final class ChefeMetal {
     /** Malachar tem tres atos: Trem Maluco, morcego gigante e Principe das Trevas. */
     private final int ultimaForma;
     private String cenaPendente;
-    private final Trem trem;
     private final EnxameMalachar enx;
     private final LouvaDeusHexar louva;
     private final SenhorEclipse senhor; // terceira forma do Malachar // ato II do Hexar: louva-a-deus guitarrista e o verme
@@ -68,7 +67,6 @@ public final class ChefeMetal {
                 * dificuldade.resistenciaChefe * (artista == 1 ? .85 : 1));
         this.vida = vidaPorForma;
         this.ultimaForma = 2; // Malachar: enxame e o Senhor do Eclipse (o maestro saiu)
-        this.trem = null; // Trem (Expresso do Eclipse) aposentado
         this.enx = artista == 1 && EnxameMalachar.temArte() ? new EnxameMalachar() : null;
         this.senhor = enx != null && SenhorEclipse.temArte() ? new SenhorEclipse() : null;
         this.mar = artista == 5 && MarioneteHexar.temArte() ? new MarioneteHexar() : null;
@@ -92,7 +90,6 @@ public final class ChefeMetal {
         if (chicoteAviso > 0) { chicoteAviso -= dt; if (chicoteAviso <= 0) { chicoteAviso = 0; chicote = .55; chicoteAcertou = false; SomJogo.tocar(SomJogo.Efeito.CHEFE_TIRO); } }
         else if (chicote > 0) { chicote = Math.max(0, chicote - dt); double pc = 1 - chicote / .55; pc = pc * pc * (3 - 2 * pc); chicoteAng = chicoteA0 + (chicoteA1 - chicoteA0) * pc; }
         if (tempoQuadroValdrak > 0 && (tempoQuadroValdrak = Math.max(0, tempoQuadroValdrak - dt)) == 0 && chicote <= 0 && chicoteAviso <= 0) quadroValdrak = -1;
-        if (trem != null && forma == 1) { trem.atualizar(dt, naveX, naveY, dificuldade, tiros); entrada = trem.entrada(); return; }
         if (enx != null && (forma == 1 || transformando > 0)) { enx.vida(vida / (double) vidaPorForma); enx.atualizar(dt, naveX, naveY, dificuldade, tiros); if (forma == 1) { entrada = enx.entrada(); return; } }
         if (senhor != null && forma == 2) { // Senhor do Eclipse; de tempos em tempos vira enxurrada de morcegos e se esconde
             if (transformando > 0) transformando = Math.max(0, transformando - dt);
@@ -390,7 +387,6 @@ public final class ChefeMetal {
             transformando = 1.45;
             intervalo = 1.7;
             // o morcego vira o Principe das Trevas numa cutscene propria
-            if (trem != null && forma == 2) trem.parar();
             if (bob != null && forma == 2) { transformando = 1.0; aviso = "TUTAN-BOB FUGIU! O ALMIRANTE KORVUS ASSUME O CONVES!"; }
             if (cento != null && forma == 2) { transformando = 0; cento.furia(); aviso = "KROVAX ENFURECEU!"; SomJogo.tocar(SomJogo.Efeito.EXPLOSAO_GRANDE); }
             if (moto != null && forma == 2) { quebra = quebraTotal = MONTAGEM; transformando = 0; aviso = "A MOTO SE TRANSFORMA: VALDRAK!"; SomJogo.tocar(SomJogo.Efeito.EVOLUCAO); }
@@ -444,7 +440,6 @@ public final class ChefeMetal {
                 : entrada >= 1 && transformando <= 0 && intervalo < .38
                     ? -(1 - Math.max(0, intervalo) / .38) : 0;
         // Transformacao dissolve as duas formas; nenhuma bolha cobre o personagem.
-        if (trem != null && forma == 1) { g.dispose(); trem.desenhar(tela, flash); return; }
         if (enx != null && (forma == 1 || enx.escondido())) { g.dispose(); enx.desenhar(tela, 1f); return; }
         if (senhor != null && forma == 2) { // os morcegos se juntam e o Senhor do Eclipse aparece
             float p = (float) Math.max(0, Math.min(1, 1 - transformando / 1.45));
@@ -467,9 +462,7 @@ public final class ChefeMetal {
         if (transformando > 0) {
             float transicao = (float)Math.max(0, Math.min(1, 1 - transformando / 1.45));
             g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1-transicao));
-            // o trem explode e o morcego sai da fumaca
-            if (trem != null && forma == 2) { Graphics2D t = (Graphics2D) tela.create(); t.setComposite(g.getComposite()); trem.desenhar(t, 0); t.dispose(); }
-            else if (enx != null && forma == 2) enx.desenhar(tela, 1 - transicao);
+            if (enx != null && forma == 2) enx.desenhar(tela, 1 - transicao);
             else Sprites16Bits.desenhar(g, artista, formaSprite() - 1, largura, altura, tempo, 0);
             g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, transicao));
         }
@@ -516,7 +509,7 @@ public final class ChefeMetal {
         Graphics2D g = (Graphics2D) tela.create();
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         if (pecas == null) prepararPecas();
-        int W = Config.LARGURA, H = Config.ALTURA, barra = (int) (58 * Math.min(1, Math.min(p / .08, (1 - p) / .06)));
+        int W = Config.LARGURA, H = Config.ALTURA;
         // a moto vai para o centro do palco da montagem, abre as pecas e se desfaz enquanto as pecas saem dela
         double mp = Math.min(1, p / .16);
         Graphics2D m = (Graphics2D) g.create();
@@ -552,10 +545,8 @@ public final class ChefeMetal {
             pecas.add(new double[]{vdx + tx, vdy + ty, mb.x + r.nextInt(Math.max(1, mb.width)), mb.y + r.nextInt(Math.max(1, mb.height)), atraso, (r.nextDouble() - .5) * 8});
         }
     }
-    /** Montagem sem faixas de cinema (pedido do jogo). */
-    private static final boolean SEM_CINEMA = true;
-    /** Altura das faixas de cinema da montagem (0 fora dela); a Fase desenha por cima de tudo. */
-    int cinema() { if (SEM_CINEMA || moto == null || quebra <= 0) return 0; double p = 1 - quebra / quebraTotal; return (int) (62 * Math.min(1, Math.min(p / .08, (1 - p) / .06))); }
+    /** Altura das faixas de cinema (a Fase desenha por cima de tudo): a montagem e sem faixas, pedido do jogo. */
+    int cinema() { return 0; }
     /** A chicotada: aviso do arco e o chicote de plasma esticado da mao. */
     private void desenharChicote(Graphics2D tela) {
         Graphics2D g = (Graphics2D) tela.create();
@@ -597,7 +588,6 @@ public final class ChefeMetal {
     }
 
     public Rectangle getBounds() {
-        if (trem != null && forma == 1) return trem.getBounds();
         if (enx != null && (forma == 1 || enx.escondido())) return enx.bounds();
         if (senhor != null && forma == 2) return senhor.bounds();
         if (mar != null && forma == 1) return mar.bounds();
@@ -610,8 +600,8 @@ public final class ChefeMetal {
     public boolean estaVivo() { return vida > 0; }
     public int getVida() { return vida; }
     public int getVidaMaxima() { return vidaPorForma; }
-    public int getX() { return cento != null || (trem != null || enx != null || mar != null || moto != null || bob != null) && forma == 1 || louva != null && forma == 2 || senhor != null && forma == 2 ? getBounds().x : (int)x; }
-    public int getY() { return cento != null || (trem != null || enx != null || mar != null || moto != null || bob != null) && forma == 1 || louva != null && forma == 2 || senhor != null && forma == 2 ? getBounds().y : (int)y; }
+    public int getX() { return cento != null || (enx != null || mar != null || moto != null || bob != null) && forma == 1 || louva != null && forma == 2 || senhor != null && forma == 2 ? getBounds().x : (int)x; }
+    public int getY() { return cento != null || (enx != null || mar != null || moto != null || bob != null) && forma == 1 || louva != null && forma == 2 || senhor != null && forma == 2 ? getBounds().y : (int)y; }
     public int getForma() { return forma; }
     public double getEntrada() { return entrada; }
     public String getNome() {
@@ -627,104 +617,4 @@ public final class ChefeMetal {
         }
     }
 
-    /**
-     * Ato I do Malachar: o Trem Maluco. Corre nos trilhos da direita, troca de faixa, solta baforadas
-     * roxas pela chamine, arranca vagoes de espinhos contra a nave e, de tempos em tempos,
-     * atravessa a tela inteira na faixa da nave depois de um aviso.
-     */
-    private final class Trem {
-        private final java.awt.image.BufferedImage arte = lerArte("malachar_trem.png");
-        private final int h = 175, w;
-        private double tx = Config.LARGURA + 40, ty, alvoY, entrar, relogio = 1.4, sopro, aviso, investidaTrem = 6.5;
-        private boolean investindo, voltando;
-        private int golpes;
-        Trem() {
-            w = arte != null ? arte.getWidth() / 3 * h / arte.getHeight() : 540;
-            ty = alvoY = Config.HUD + (Config.ALTURA - Config.HUD - h) / 2.0;
-        }
-        double entrada() { return entrar; }
-        void parar() { aviso = 0; investindo = false; if (tx < 0 || tx > base()) tx = base(); }
-        private double base() { return Config.LARGURA - w - 8; }
-        void atualizar(double dt, int naveX, int naveY, Dificuldade dif, List<TiroChefe> tiros) {
-            sopro = Math.max(0, sopro - dt);
-            double furia = vida < vidaPorForma * .4 ? 1.3 : 1;
-            if (investindo) {
-                tx -= 980 * furia * dt;
-                if (tx < -w - 30) { investindo = false; voltando = true; tx = Config.LARGURA + 40; alvoY = faixa(naveY); ty = alvoY; }
-                return;
-            }
-            if (aviso > 0) {
-                aviso = Math.max(0, aviso - dt);
-                if (aviso == 0) { investindo = true; SomJogo.tocar(SomJogo.Efeito.CHEFE_ENTRADA); }
-                return;
-            }
-            double chegada = voltando ? .9 : 1.35;
-            if (tx > base()) tx = Math.max(base(), tx - (Config.LARGURA + 40 - base()) / chegada * dt);
-            else voltando = false;
-            if (!voltando) entrar = Math.min(1, entrar + dt / 1.35);
-            // troca de faixa suave, perseguindo a nave com atraso
-            ty += (alvoY - ty) * Math.min(1, dt * 1.6);
-            if (entrar < 1 || voltando) return;
-            relogio -= dt * dif.cadenciaInimigos * furia;
-            investidaTrem -= dt * dif.cadenciaInimigos * furia;
-            if (investidaTrem <= 0 && sopro <= 0) {
-                investidaTrem = 6.2 + golpes % 2 * 1.3;
-                alvoY = ty = faixa(naveY); aviso = .95;
-                return;
-            }
-            if (relogio > 0 || tiros.size() > 46) return;
-            golpes++;
-            if (golpes % 3 == 0) vagao(naveX, naveY, tiros); else baforada(tiros);
-            alvoY = faixa(naveY + (golpes % 2 == 0 ? -120 : 120));
-            relogio = (golpes % 3 == 0 ? 1.6 : 1.25);
-        }
-        void disparar(int naveX, int naveY, List<TiroChefe> tiros) { if (golpes++ % 2 == 0) baforada(tiros); else vagao(naveX, naveY, tiros); }
-        private double faixa(double naveY) { return Math.max(Config.HUD + 14, Math.min(Config.ALTURA - h - 10, naveY - h * .55)); }
-        private void baforada(List<TiroChefe> tiros) {
-            sopro = .7; gestoDisparo = DURACAO_GESTO;
-            double cx = tx + w * .09, cy = ty + h * .12;
-            for (int i = -2; i <= 2; i++)
-                tiros.add(new TiroChefe(cx, cy, Math.cos(Math.PI + i * .16) * (230 - Math.abs(i) * 15), Math.sin(Math.PI + i * .16) * 230 + i * 25,
-                        false, TiroChefe.FUMACA, TiroChefe.Movimento.ONDA));
-        }
-        private void vagao(int naveX, int naveY, List<TiroChefe> tiros) {
-            double ox = tx + 40, oy = ty + h * .55, a = Math.atan2(naveY + 18 - oy, naveX + 22 - ox);
-            tiros.add(new TiroChefe(ox, oy, Math.cos(a) * 360, Math.sin(a) * 360, true, TiroChefe.VAGAO, TiroChefe.Movimento.RETO));
-        }
-        Rectangle getBounds() { return new Rectangle((int) tx + 12, (int) (ty + h * .3), w - 24, (int) (h * .66)); }
-        void desenhar(Graphics2D tela, double flashDano) {
-            Graphics2D g = (Graphics2D) tela.create();
-            int x = (int) tx, y = (int) ty + ((int) (tempo * 14) % 2);
-            // sem faixa na tela: o aviso e o olho da caveira acendendo (abaixo)
-            int q = sopro > 0 ? 1 : vida < vidaPorForma * .4 ? 2 : 0;
-            if (arte != null) {
-                int fw = arte.getWidth() / 3;
-                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                g.drawImage(arte, x, y, x + w, y + h, q * fw, 0, q * fw + fw, arte.getHeight(), null);
-            } else {
-                g.setColor(new Color(36, 30, 42)); g.fillRect(x, y + h / 3, w, h / 2);
-                g.setColor(new Color(190, 80, 255)); for (int k = 0; k < 8; k++) g.fillOval(x + 20 + k * w / 8, y + h * 3 / 4, 26, 26);
-            }
-            // olho da caveira acende no aviso e em investida
-            if (aviso > 0 || investindo) {
-                int ex = x + (int) (w * .045), ey = y + (int) (h * .56), r = 9 + (int) (Math.sin(tempo * 30) * 3);
-                g.setColor(new Color(230, 140, 255, 200)); g.fillOval(ex - r, ey - r, r * 2, r * 2);
-                g.setColor(Color.WHITE); g.fillOval(ex - r / 3, ey - r / 3, r * 2 / 3, r * 2 / 3);
-            }
-            if (investindo) for (int k = 0; k < 12; k++) { g.setColor(new Color(200, 90, 255, 150 - k * 10)); g.fillRect(x + w + k * 18, y + h / 2 + (k % 3 - 1) * 26, 40, 3); }
-            if (flashDano > 0 && arte != null) {
-                // brilho so na silhueta do trem, sem caixa por cima
-                int fw = arte.getWidth() / 3; Graphics2D b = (Graphics2D) g.create();
-                b.setComposite(AlphaComposite.SrcOver.derive((float) Math.min(.45, flashDano / .16 * .45)));
-                b.setXORMode(new Color(0, 0, 0)); b.setPaintMode();
-                b.drawImage(arte, x, y + 2, x + w, y + h + 2, q * fw, 0, q * fw + fw, arte.getHeight(), null); b.dispose();
-            }
-            g.dispose();
-        }
-    }
-    private static java.awt.image.BufferedImage lerArte(String n) {
-        java.net.URL u = ChefeMetal.class.getResource("/ImagemIcon/" + n);
-        if (u == null) return null;
-        try { return javax.imageio.ImageIO.read(u); } catch (java.io.IOException e) { return null; }
-    }
 }

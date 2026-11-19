@@ -20,6 +20,7 @@ import javax.swing.Timer;
  * ENTER, ESPACO, ESC ou um clique pulam.
  */
 final class AberturaJogo extends JPanel {
+    private static final long serialVersionUID = 1L;
     static final double PLACA = 3.6, LOGO = 3.0, SEGURA = 1.2, DURACAO = PLACA + LOGO + SEGURA;
     private static final BufferedImage PLACA_IMG = ler("placa_jogo_original_2019.png"), LOGO_IMG = ler("abertura_logo.png"),
             LETRAS = ler("abertura_letras.png"), BRILHO = ler("abertura_brilho.png");

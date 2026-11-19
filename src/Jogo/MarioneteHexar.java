@@ -18,7 +18,7 @@ import java.util.List;
 final class MarioneteHexar {
     private static final BufferedImage MAO = ler("mao_marionetista.png"), BONECO = ler("hexar_marionete.png"), QUEBRA = ler("hexar_marionete_quebra.png");
     static boolean temArte() { return MAO != null && BONECO != null; }
-    private static final int W = Config.LARGURA, H = Config.ALTURA, TOPO = Config.HUD;
+    private static final int W = Config.LARGURA, TOPO = Config.HUD;
     private static final int MAO_T = 230, BON_T = 300;
 
     private double tempo, entrada, hx = W + 40, hy, bOff = 150, bDx, recarga = 1.8, comando, guarda, espera, flash, faisca, gx;

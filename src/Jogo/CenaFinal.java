@@ -8,8 +8,6 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Epilogo 16 bits: lendas no palco com os creditos de cada chefe, homenagem em preto e branco
@@ -18,7 +16,6 @@ import java.util.List;
  */
 public final class CenaFinal {
     private static final double INICIO_CREDITOS = 14.0, VELOCIDADE = 47, TRANSICAO = 1.5;
-    private static final int TOPO_ROLAGEM = 80;
     private static final Image SILHUETA = olhosAmarelos(Assets.imagem("robo_gigante_relampago_16bits.png"));
     private static final Image REVELACAO = Assets.imagem("robo_gigante_cabeca_099.png");
     /** Letreiro HEAVY METAL NEVER DIES em pixel art (caveira com chifres e correntes) embaixo da foto. */
@@ -41,15 +38,11 @@ public final class CenaFinal {
         {-5, "IRMAOS OSSADA", "OS GEMEOS MONGES CAVEIRA", "DANCARAM KUNG FU ATE AS ALMAS", "VIRAREM UM BURACO NEGRO."}
     };
     /** A homenagem e uma dedicatoria em texto, sem nomes nem retratos de pessoas reais. */
-    private static final Object[][] LENDAS = {};
     private static final String[] ENCERRAMENTO_CREDITOS = {
         "A JORNADA COMECOU COM A LULA DO ABISMO", "", "DESENVOLVIDO POR FLAVIO PRADO", "JOGO ORIGINAL - 2019",
         "", "DE FAS DE METAL, PARA FAS DE METAL"
     };
 
-    private static final BufferedImage ROLO_CHEFES = rolo(false);
-    private static final BufferedImage ROLO_LENDAS = rolo(true);
-    private static int centroMalachar;
 
     // Linha do tempo, calculada a partir da altura dos creditos.
     /** Letreiro: titulo no topo do rolo, as bandas a cada PASSO e o fecho, que para no meio da tela. */
@@ -57,8 +50,6 @@ public final class CenaFinal {
     private static final double PARADA_LETREIRO = Config.ALTURA / 2.0 - 90 + OFF_FECHO;
     private static final double FIM_CHEFES = INICIO_CREDITOS + PARADA_LETREIRO / VELOCIDADE + 4.0;
     private static final double INICIO_LENDAS = FIM_CHEFES + TRANSICAO;
-    private static final double INICIO_ROLO_LENDAS = INICIO_LENDAS + 5.5;
-    private static final double MALACHAR_NO_CENTRO = INICIO_ROLO_LENDAS;
     private static final double FIM_LENDAS = INICIO_LENDAS + 8.0;
     private static final double INICIO_SILHUETA = FIM_LENDAS + TRANSICAO + 1.0;
     private static final double CORTE_CABECA = INICIO_SILHUETA + 5.5;
@@ -189,14 +180,6 @@ public final class CenaFinal {
         g.setColor(new Color(0, 0, 12, 170)); g.fillRoundRect(30, y, w - 60, altura, 14, 14);
         g.setColor(new Color(255, 210, 94, 70)); g.drawRoundRect(30, y, w - 60, altura, 14, 14);
     }
-    /** Faixa escura no pe da tela, onde entra a legenda de cada banda. */
-    private static void rodape(Graphics2D g, int w, int h, double f) {
-        for (int k = 0; k < 40; k++) {
-            g.setColor(new Color(0, 0, 10, (int) (f * Math.min(215, k * 9))));
-            g.fillRect(0, 440 + k * 2, w, 2);
-        }
-        g.setColor(new Color(0, 0, 10, (int) (f * 215))); g.fillRect(0, 520, w, h - 520);
-    }
     /** Texto centralizado com sombra, para ler por cima do palco. */
     private static void sombreado(Graphics2D g, String s, int w, int y) {
         Color c = g.getColor(); int x = (w - g.getFontMetrics().stringWidth(s)) / 2;
@@ -220,88 +203,11 @@ public final class CenaFinal {
         escurecer(g, w, h, Math.max(1 - t / TRANSICAO, (tempo - (FIM_LENDAS - TRANSICAO)) / TRANSICAO));
     }
 
-    private static void rolar(Graphics2D g, BufferedImage rolo, int y, int w, int h) {
-        Graphics2D a = (Graphics2D) g.create();
-        a.clipRect(0, TOPO_ROLAGEM, w, h - TOPO_ROLAGEM);
-        a.drawImage(rolo, 0, y, null);
-        a.dispose();
-    }
 
     private static void centralizar(Graphics2D g, String s, int w, int y) {
         g.drawString(s, (w - g.getFontMetrics().stringWidth(s)) / 2, y);
     }
 
-    /** Monta a faixa de creditos uma unica vez: retrato em pixel art ao lado do texto. */
-    private static BufferedImage rolo(boolean lendas) {
-        int w = Config.LARGURA;
-        Object[][] itens = lendas ? LENDAS : CHEFES;
-        int altura = 60 + itens.length * 190 + (lendas ? 160 : ENCERRAMENTO_CREDITOS.length * 44 + 40);
-        BufferedImage b = new BufferedImage(w, altura, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = b.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        int y = 20;
-        if (!lendas) {
-            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 24));
-            g.setColor(new Color(255, 210, 94));
-            centralizar(g, "METAL SPACE - LEGENDS OF METAL", w, y + 24);
-            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 18));
-            g.setColor(Color.WHITE);
-            centralizar(g, "UMA HOMENAGEM AO HEAVY METAL", w, y + 56);
-            y += 100;
-        }
-        for (int i = 0; i < itens.length; i++) {
-            Object[] it = itens[i];
-            boolean fecho = lendas && i == itens.length - 1;
-            int lado = fecho ? 200 : 140;
-            if (fecho) {
-                y += 30;
-                centroMalachar = y + lado / 2;
-                int x = (w - lado) / 2;
-                retrato(g, (Integer) it[0], x, y, lado);
-                int ty = y + lado + 42;
-                g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 32));
-                g.setColor(Color.WHITE);
-                centralizar(g, (String) it[1], w, ty);
-                g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 18));
-                g.setColor(new Color(185, 185, 185));
-                centralizar(g, it[2] + "  /  " + it[3], w, ty + 30);
-                g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 17));
-                g.setColor(new Color(230, 230, 230));
-                centralizar(g, (String) it[4], w, ty + 60);
-                centralizar(g, (String) it[5], w, ty + 84);
-                centroMalachar = y + (lado + 126) / 2;
-                y = ty + 110;
-                continue;
-            }
-            int x = 120;
-            retrato(g, (Integer) it[0], x, y, lado);
-            int tx = x + lado + 30;
-            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 26));
-            g.setColor(lendas ? Color.WHITE : new Color(255, 210, 94));
-            g.drawString((String) it[1], tx, y + 34);
-            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 18));
-            g.setColor(lendas ? new Color(185, 185, 185) : new Color(110, 222, 245));
-            g.drawString(lendas ? it[2] + "  /  " + it[3] : (String) it[2], tx, y + 62);
-            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
-            g.setColor(new Color(232, 232, 232));
-            int base = lendas ? 4 : 3;
-            g.drawString((String) it[base], tx, y + 96);
-            g.drawString((String) it[base + 1], tx, y + 120);
-            y += 190;
-        }
-        if (!lendas) {
-            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 21));
-            y += 20;
-            for (int i = 0; i < ENCERRAMENTO_CREDITOS.length; i++) {
-                String linha = ENCERRAMENTO_CREDITOS[i];
-                g.setColor(i == 0 || linha.startsWith("AGRADECIMENTOS") ? new Color(255, 210, 94) : Color.WHITE);
-                centralizar(g, linha, w, y + i * 44);
-            }
-        }
-        g.dispose();
-        return lendas ? cinza(b) : b;
-    }
 
     /** Retrato em moldura do HUD: sprite do chefe, retrato desenhado, ou uma vela quando nao ha nenhum. */
     private static void retrato(Graphics2D g, int id, int x, int y, int lado) {
