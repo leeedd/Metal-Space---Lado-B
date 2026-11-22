@@ -426,7 +426,7 @@ final class ChefeFinal {
     }
     private boolean avisandoInvestida() { return ato == BELZEBU && investida > 1.1 || ato == ZAREF && investida > .8; }
 
-    // ---------------- ato IV: Ronnie Hexar Zaref ----------------
+    // ---------------- ato IV: Zaref, o Templario do Inferno ----------------
     private double maoX() { return ato == CORRENTES ? x + TAM[CORRENTES] * (DEMONIO_CORRENTES != null ? .5 : .28) : x + TAM[ZAREF] * .32; }
     private double maoY() { return ato == CORRENTES ? y + TAM[CORRENTES] * (DEMONIO_CORRENTES != null ? .4 : .3) : y + TAM[ZAREF] * .42; }
     /** O arco-iris sai da mao erguida nos chifres (quadro 4 do Zaref de espada). */
