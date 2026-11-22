@@ -199,12 +199,13 @@ final class FugaClimax {
         int bx = 480, by = 555; double pulsa = .5 + .5 * Math.sin(t * 14);
         g.setColor(new Color(20, 20, 20)); g.fillOval(bx - 52, by - 24, 104, 48); for (int i = 0; i < 12; i++) { g.setColor(i % 2 == 0 ? new Color(240, 200, 30) : Color.BLACK); g.fillArc(bx - 48, by - 21, 96, 42, i * 30, 30); }
         boolean afundado = soco > .18; g.setColor(new Color(120, 0, 0)); g.fillOval(bx - 30, by - 14 + (afundado ? 6 : 0), 60, 26); g.setColor(new Color(230, 30 + (int) (60 * pulsa), 20)); g.fillOval(bx - 30, by - 22 + (afundado ? 8 : 0), 60, 26);
-        if (soco >= 0 && SOCO != null) { int fw = SOCO.getWidth() / 2, fh = SOCO.getHeight(), t0 = 200; // punho erguido, desce rapido e esmaga o botao
-            if (!afundado) { double k = Math.min(1, soco / .18); int x = (int) (W - 230 + (bx - 120 - (W - 230)) * k), y = (int) (H - 260 + (by - 210 - (H - 260)) * k * k);
-                if (k > .4) { g.setColor(new Color(255, 255, 255, 70)); for (int i = 1; i < 4; i++) g.drawImage(SOCO, x, y - i * 22, x + t0, y - i * 22 + t0, 0, 0, fw, fh, null); } // rastro da descida
-                g.drawImage(SOCO, x, y, x + t0, y + t0, 0, 0, fw, fh, null); }
-            else { int x = bx - (int) (t0 * .58), y = by - (int) (t0 * .84) + 6; g.setColor(new Color(214, 98, 22)); g.fillPolygon(new int[]{x + 2, x + 2, x - 90}, new int[]{y + (int) (t0 * .55), y + t0, y + t0 + 40}, 3); g.setColor(new Color(170, 70, 15)); g.drawLine(x - 60, y + t0 + 10, x + 2, y + (int) (t0 * .8)); // a manga continua ate a borda
-                g.drawImage(SOCO, x, y, x + t0, y + t0, fw, 0, fw * 2, fh, null); }
+        if (soco >= 0 && SOCO != null) { int fw = SOCO.getWidth() / 2, fh = SOCO.getHeight(), t0 = 200; // a mao DIREITA larga o manche, ergue o punho e esmaga o botao (arte espelhada: a manga vem da direita)
+            int mx = W - 165 - FugaCockpit.MAO_X, my = H - 165 + 30, ex = bx + 20, ey = by - 250; // do manche ate o alto, e dali para o botao
+            if (!afundado) { double k = Math.min(1, soco / .18); int x, y; if (k < .45) { double q = k / .45; x = (int) (mx + (ex - mx) * q); y = (int) (my + (ey - my) * q); } else { double q = (k - .45) / .55; x = (int) (ex + (bx - (int) (t0 * .42) - ex) * q); y = (int) (ey + (by - (int) (t0 * .84) + 6 - ey) * q * q); }
+                if (k > .5) { Graphics2D r = (Graphics2D) g.create(); for (int i = 1; i < 4; i++) { r.setComposite(AlphaComposite.SrcOver.derive(.3f / i)); r.drawImage(SOCO, x + t0, y - i * 22, x, y - i * 22 + t0, 0, 0, fw, fh, null); } r.dispose(); } // rastro fraco da descida
+                g.drawImage(SOCO, x + t0, y, x, y + t0, 0, 0, fw, fh, null); }
+            else { int x = bx - (int) (t0 * .42), y = by - (int) (t0 * .84) + 6; g.setColor(new Color(214, 98, 22)); g.fillPolygon(new int[]{x + t0 - 2, x + t0 - 2, x + t0 + 90}, new int[]{y + (int) (t0 * .55), y + t0, y + t0 + 40}, 3); g.setColor(new Color(170, 70, 15)); g.drawLine(x + t0 + 60, y + t0 + 10, x + t0 - 2, y + (int) (t0 * .8)); // a manga continua ate a borda direita
+                g.drawImage(SOCO, x + t0, y, x, y + t0, fw, 0, fw * 2, fh, null); }
             return; }
         if (soco >= 0) { double k = Math.min(1, soco / .18); int t0 = 190, x0 = W - 165 + 6, y0 = H - 135, x1 = bx - t0 / 2 + 10, y1 = by - t0 + 40 + (afundado ? 18 : 0); // a mao sai do manche e soca o botao
             cabine.maoDireita(g, 5, (int) (x0 + (x1 - x0) * k), (int) (y0 + (y1 - y0) * k), (int) (165 + (t0 - 165) * k));
