@@ -247,7 +247,7 @@ final class FugaCockpit {
     // ---------------- transicao: a camera se aproxima da nave e entra pelo vidro da cabine ----------------
     void desenharIntro(Graphics2D g, FugaFinal f, Nave nave) {
         double e = FugaFinal.INTRO - f.intro, p = Math.min(1, e / (FugaFinal.INTRO - .5)), z = 1 + Math.pow(p, 3) * 12;
-        f.pista.desenhar(g, 0, .1, f.tempo, 0);
+        FugaFinal.pixel(g, lg -> f.pista.desenhar(lg, 0, .1, f.tempo, 0));
         if (nave != null) { double ax = nave.getX() + 58, ay = nave.getY() + 16; Graphics2D a = (Graphics2D) g.create(); a.translate(W / 2.0 + (ax - W / 2.0) * (1 - p), H / 2.0 + (ay - H / 2.0) * (1 - p)); a.scale(z, z); a.translate(-ax, -ay); nave.desenhar(a); a.dispose(); }
         if (e > FugaFinal.INTRO - 1.0) { g.setColor(new Color(0, 0, 0, (int) (255 * Math.min(1, (e - FugaFinal.INTRO + 1.0) / .8)))); g.fillRect(0, 0, W, H); }
         if (e < 1.6) texto(g, "O INFERNO ESTA DESABANDO!", 90, new Color(255, 120, 60));

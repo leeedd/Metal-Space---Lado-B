@@ -68,13 +68,13 @@ final class FugaClimax {
     void desenhar(Graphics2D g, Nave nave, FugaCockpit cabine) {
         Graphics2D v = (Graphics2D) g.create(); double tr = tremor(); v.translate((rnd.nextDouble() - .5) * tr, (rnd.nextDouble() - .5) * tr);
         switch (estado) {
-            case SUBIDA: if (CL1 != null) imagem(v, CL1, 1 + e * .02); else subida(v, nave); break;
-            case PULO: if (CL2 != null) imagem(v, CL2B != null && e > 1.0 ? CL2B : CL2, 1.05 + e * .03); else pulo(v, nave); if (CL2 != null && e > 1.0 && e < 1.2) flash(v, (1.2 - e) / .2 * .6); break; // estica a mao... e agarra
-            case AFUNDA: if (CL3 != null) { double k = e / DUR[AFUNDA]; Graphics2D a = (Graphics2D) v.create(); a.translate(0, -k * k * 60); imagem(a, CL3, 1.05 + k * .06); a.dispose(); lavaEm(v, (int) (H + 40 - k * k * 330)); } else afunda(v, nave); break; // a camera desce com a nave: a lava sobe por cima
+            case SUBIDA: if (CL1 != null) imagem(v, CL1, 1 + e * .02); else FugaFinal.pixel(v, lg -> subida(lg, nave)); break;
+            case PULO: if (CL2 != null) imagem(v, CL2B != null && e > 1.0 ? CL2B : CL2, 1.05 + e * .03); else FugaFinal.pixel(v, lg -> pulo(lg, nave)); if (CL2 != null && e > 1.0 && e < 1.2) flash(v, (1.2 - e) / .2 * .6); break; // estica a mao... e agarra
+            case AFUNDA: if (CL3 != null) { double k = e / DUR[AFUNDA]; Graphics2D a = (Graphics2D) v.create(); a.translate(0, -k * k * 60); imagem(a, CL3, 1.05 + k * .06); a.dispose(); lavaEm(v, (int) (H + 40 - k * k * 330)); } else FugaFinal.pixel(v, lg -> afunda(lg, nave)); break; // a camera desce com a nave: a lava sobe por cima
             case FALHAS: case BOTAO: case APAGA: case RUPTURA: cabineAfundando(v, cabine); break;
             case PRETO: v.setColor(Color.BLACK); v.fillRect(-20, -20, W + 40, H + 40); break;
-            case EXPLODE: if (CL4 != null) { imagem(v, CL4, 1.25 - Math.min(1, e / 1.2) * .25); } else explode(v, nave); flash(v, 1 - e / .5); break;
-            case RUMO: if (DOBRA_EXT != null) imagem(v, DOBRA_EXT, 1 + e * .25); else rumo(v); break;
+            case EXPLODE: if (CL4 != null) { imagem(v, CL4, 1.25 - Math.min(1, e / 1.2) * .25); } else FugaFinal.pixel(v, lg -> explode(lg, nave)); flash(v, 1 - e / .5); break;
+            case RUMO: if (DOBRA_EXT != null) imagem(v, DOBRA_EXT, 1 + e * .25); else FugaFinal.pixel(v, lg -> rumo(lg)); break;
             case PORTAL: case TUNEL: cabineDobra(v, cabine); break;
         }
         v.dispose();
@@ -173,10 +173,10 @@ final class FugaClimax {
     private void cabineAfundando(Graphics2D g, FugaCockpit cabine) {
         double nivel; // quanto da janela a lava ja cobriu (0 a 1)
         if (estado == FALHAS) nivel = .15 + .2 * e / DUR[FALHAS]; else if (estado == BOTAO) nivel = .35 + .35 * e / DUR[BOTAO]; else if (estado == APAGA) nivel = .7 + .3 * Math.min(1, e / 1.4); else nivel = .7 + .3 * Math.min(1, e / .8);
-        g.setColor(new Color(50, 8, 8)); g.fillRect(-20, -20, W + 40, H + 40);
-        if (MAO != null) { int fw = MAO.getWidth() / 3, fh = MAO.getHeight(), q = estado == FALHAS ? 0 : estado == BOTAO ? 1 : 2; g.drawImage(MAO, 0, -10, W, 380, q * fw, 0, q * fw + fw, fh, null); }
-        else garras(g);
-        lavaNoVidro(g, nivel);
+        final double niv = nivel; FugaFinal.pixel(g, lg -> { lg.setColor(new Color(50, 8, 8)); lg.fillRect(0, 0, W, H);
+            if (MAO != null) { int fw = MAO.getWidth() / 3, fh = MAO.getHeight(), q = estado == FALHAS ? 0 : estado == BOTAO ? 1 : 2; lg.drawImage(MAO, 0, -10, W, 380, q * fw, 0, q * fw + fw, fh, null); }
+            else garras(lg);
+            lavaNoVidro(lg, niv); });
         f.semMaoDireita = soco >= 0; cabine.desenhar(g, f);
         if (estado == FALHAS || estado == BOTAO) { if (rnd.nextDouble() < .35) { g.setColor(new Color(0, 0, 0, 170 + rnd.nextInt(80))); g.fillRect(0, 330 + rnd.nextInt(60), W, H); } if (rnd.nextDouble() < .15) { g.setColor(new Color(0, 0, 0, 200)); g.fillRect(0, 0, W, H); } } // luzes piscando, painel morrendo
         if (estado == BOTAO) botao(g, cabine);
@@ -219,12 +219,14 @@ final class FugaClimax {
         g.setColor(new Color(60, 20, 20)); g.fillRect(x, y + 12, fm.stringWidth(s), 12); g.setColor(rest < 1.5 ? new Color(255, 40, 30) : new Color(255, 200, 60)); g.fillRect(x, y + 12, (int) (fm.stringWidth(s) * rest / DUR[BOTAO]), 12);
     }
     private void cabineDobra(Graphics2D g, FugaCockpit cabine) {
-        g.setColor(new Color(6, 6, 26)); g.fillRect(-20, -20, W + 40, H + 40);
-        if (estado == PORTAL) { double k = e / DUR[PORTAL]; portal(g, 480, 200, 30 + k * k * 520, 1); }
-        else if (TUNEL_ARTE != null) { int fw = TUNEL_ARTE.getWidth() / 4, fh = TUNEL_ARTE.getHeight(), q = (int) (t * 12) % 4; g.drawImage(TUNEL_ARTE, -40, -30, W + 40, 420, q * fw, 0, q * fw + fw, fh, null); }
+        FugaFinal.pixel(g, g2 -> { Graphics2D gg = g2;
+        gg.setColor(new Color(6, 6, 26)); gg.fillRect(-20, -20, W + 40, H + 40);
+        if (estado == PORTAL) { double k = e / DUR[PORTAL]; portal(gg, 480, 200, 30 + k * k * 520, 1); }
+        else if (TUNEL_ARTE != null) { int fw = TUNEL_ARTE.getWidth() / 4, fh = TUNEL_ARTE.getHeight(), q = (int) (t * 12) % 4; gg.drawImage(TUNEL_ARTE, -40, -30, W + 40, 420, q * fw, 0, q * fw + fw, fh, null); }
         else { Random r = new Random(5); for (int i = 0; i < 140; i++) { double a = r.nextDouble() * Math.PI * 2 + t * (1 + r.nextDouble()), d = ((r.nextDouble() + t * 1.6) % 1); int x1 = 480 + (int) (Math.cos(a) * d * 700), y1 = 200 + (int) (Math.sin(a) * d * 450), x2 = 480 + (int) (Math.cos(a - .15) * d * 520), y2 = 200 + (int) (Math.sin(a - .15) * d * 340);
-            g.setColor(i % 3 == 0 ? new Color(255, 255, 255, 200) : i % 3 == 1 ? new Color(90, 150, 255, 200) : new Color(170, 90, 255, 200)); g.setStroke(new BasicStroke((float) (1 + d * 5))); g.drawLine(x1, y1, x2, y2); } g.setStroke(new BasicStroke(1));
-            g.setPaint(new RadialGradientPaint(480, 200, 90, new float[]{0f, 1f}, new Color[]{Color.WHITE, new Color(120, 160, 255, 0)})); g.fillOval(390, 110, 180, 180); }
+            gg.setColor(i % 3 == 0 ? new Color(255, 255, 255, 200) : i % 3 == 1 ? new Color(90, 150, 255, 200) : new Color(170, 90, 255, 200)); gg.setStroke(new BasicStroke((float) (1 + d * 5))); gg.drawLine(x1, y1, x2, y2); } gg.setStroke(new BasicStroke(1));
+            gg.setPaint(new RadialGradientPaint(480, 200, 90, new float[]{0f, 1f}, new Color[]{Color.WHITE, new Color(120, 160, 255, 0)})); gg.fillOval(390, 110, 180, 180); }
+        });
         f.semMaoDireita = false; f.empurrando = true; cabine.desenhar(g, f);
         if (estado == TUNEL && e < 4 && (int) (t * 10) % 3 == 0) { g.setColor(new Color(255, 255, 255, 60)); g.fillRect(0, 0, W, H); } // luzes piscando na turbulencia
     }

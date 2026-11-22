@@ -111,6 +111,13 @@ final class FugaFinal {
         g.setColor(new Color(80, 220, 90)); int zw = (int) (bw * larg()); g.fillRect(bx + (int) (bw * faixa()) - zw / 2, by, zw, 12);
         g.setColor(Color.WHITE); int ax = bx + (int) (bw * ignAgulha); g.fillRect(ax - 2, by - 3, 4, 18);
     }
+    private static final java.awt.image.BufferedImage BAIXA = new java.awt.image.BufferedImage(480, 300, java.awt.image.BufferedImage.TYPE_INT_RGB);
+    /** Pixel art de verdade: o que e desenhado no codigo vai para uma tela de 480x300 sem suavizacao e e ampliado 2x sem filtro. */
+    static void pixel(Graphics2D g, java.util.function.Consumer<Graphics2D> desenho) {
+        Graphics2D lg = BAIXA.createGraphics(); lg.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_OFF); lg.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        lg.scale(.5, .5); desenho.accept(lg); lg.dispose();
+        Graphics2D a = (Graphics2D) g.create(); a.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR); a.drawImage(BAIXA, 0, 0, 960, 600, null); a.dispose();
+    }
     void ferir(int s, double d) { sist[s] = Math.max(0, sist[s] - d); }
     /** Um obstaculo atingiu a nave: o escudo segura o que puder; o resto racha a estrutura e fere um sistema. */
     void colidiu(FugaPista.Obj o) {
@@ -125,7 +132,7 @@ final class FugaFinal {
         if (certo) { falar("CAMINHO CERTO! A SAIDA ESTA MAIS PERTO."); SomJogo.tocar(SomJogo.Efeito.CONFIRMAR); return; }
         falar("BECO SEM SAIDA! O TUNEL DESABOU!"); SomJogo.tocar(SomJogo.Efeito.EXPLOSAO_GRANDE); impacto = 1; alarme = 1;
         double abs = Math.min(escudo, 30); escudo -= abs; ferir(ESTRUTURA, 18 - abs / 3); ferir(1 + (int) (Math.random() * 5), 12);
-        pista.distancia = Math.max(checkpoint * DIST_TOTAL / 4, pista.distancia - 160); pista.objs.removeIf(q -> q.tipo != FugaPista.BOCA); vel *= .4; // volta ate a bifurcacao, mais perto do colapso
+        pista.distancia = Math.max(checkpoint * DIST_TOTAL / 4, pista.distancia - 340); pista.objs.removeIf(q -> q.tipo != FugaPista.BOCA); vel *= .4; pista.castigar(); colapsoDist = Math.min(colapsoDist, pista.distancia - 60); falar("PERDIDO NO INFERNO! GARGULAS POR TODA PARTE!"); // jogado bem para tras, num trecho lotado, com o colapso colado
     }
     /** Dica de rota no vidro: aponta o lado da saida quando a navegacao esta boa. */
     private void desenharRota(Graphics2D g) {
@@ -153,7 +160,7 @@ final class FugaFinal {
         if (climax != null) { climax.desenhar(g, nave, cabine); if (falaT > 0) cabine.texto(g, fala, 70, new Color(140, 255, 150)); return; }
         if (intro > 0) { cabine.desenharIntro(g, this, nave); return; }
         Graphics2D v = (Graphics2D) g.create(); double tr = tremor; v.translate((Math.random() - .5) * tr, (Math.random() - .5) * tr);
-        pista.desenhar(v, sx, sy, tempo, Math.max(0, Math.min(1, (colapsoDist - pista.distancia + 40) / 40)));
+        pixel(v, lg -> pista.desenhar(lg, sx, sy, tempo, Math.max(0, Math.min(1, (colapsoDist - pista.distancia + 40) / 40))));
         cabine.desenhar(v, this); v.dispose(); desenharRota(g); desenharIgnicao(g);
         if (recomeco > 0) { g.setColor(new Color(0, 0, 0, (int) (255 * Math.min(1, (2.5 - recomeco) / 1.2)))); g.fillRect(0, 0, 960, 600); cabine.texto(g, fala, 300, new Color(255, 80, 60)); }
     }

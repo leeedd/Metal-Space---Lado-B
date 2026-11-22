@@ -42,7 +42,7 @@ final class FugaPista {
         if (distancia >= proxBoca) { proxBoca += DIST_BOCA; Obj o = novo(BOCA); o.vida = 999; } // bocas de tunel de rocha passando
         if (distancia >= proxBifurca) { proxBifurca += DIST_BIFURCA; for (Obj q : objs) if (q.z > LONGE - 12 && q.tipo != BOCA) q.vivo = false; objs.removeIf(q -> !q.vivo);
             Obj o = novo(BIFURCA); o.var = rnd.nextInt(2); o.r = .3; o.vida = 999; } // o tunel se divide: so um lado leva a saida
-        double dens = .55 + progresso * 1.1; // a dificuldade cresce com a subida
+        castigo = Math.max(0, castigo - dt); double dens = (.55 + progresso * 1.1) * (castigo > 0 ? 2.8 : 1); // a dificuldade cresce com a subida (e muito depois de errar o caminho)
         if ((proxObj -= dt * dens * (.6 + vel / 40)) <= 0) { proxObj = .32 + rnd.nextDouble() * .3; criar(progresso, sx, sy); }
         if ((proxDesmorone -= dt) <= 0 && progresso > .15) { proxDesmorone = 7 - progresso * 3 + rnd.nextDouble() * 3; Obj o = novo(DESMORONE); o.x = rnd.nextBoolean() ? -.85 : .85; o.y = 0; o.r = .9; o.vida = 99; }
         for (Obj o : new ArrayList<>(objs)) { // copia: escolher o caminho errado limpa a lista no meio da passada
@@ -68,7 +68,11 @@ final class FugaPista {
         for (double[] e : estouros) { e[3] += dt; e[2] -= vel * dt; } estouros.removeIf(e -> e[3] > .5 || e[2] < .3);
     }
     private Obj novo(int tipo) { Obj o = new Obj(); o.tipo = tipo; o.z = LONGE; o.var = rnd.nextInt(100); objs.add(o); return o; }
+    double castigo; // segundos de inferno mais cheio depois de errar a bifurcacao
+    /** Errou o caminho: o tunel cospe a nave para tras, num trecho lotado de gargulas e inimigos. */
+    void castigar() { castigo = 22; for (int k = 0; k < 8; k++) { Obj o = novo(GARGULA); o.z = 10 + k * 4; o.x = (k % 2 == 0 ? -1.3 : 1.3); o.y = -.7 + rnd.nextDouble() * 1.1; o.r = .26; o.vida = 3; } }
     private void criar(double p, double sx, double sy) {
+        if (castigo > 0 && rnd.nextDouble() < .75) { Obj o = novo(GARGULA); o.x = rnd.nextBoolean() ? -1.4 : 1.4; o.y = -.7 + rnd.nextDouble() * 1.1; o.r = .26; o.vida = 3; return; } // trecho do castigo: gargulas em bando
         double r = rnd.nextDouble(); Obj o;
         if (r < .34) { o = novo(ROCHA); o.x = (rnd.nextDouble() * 2 - 1) * 1.2; o.y = TETO - .2; o.vy = .25 + rnd.nextDouble() * .35; o.r = .22 + rnd.nextDouble() * .18; o.vida = 3; }
         else if (r < .55) { o = novo(COLUNA); o.x = rnd.nextDouble() < .45 ? sx + (rnd.nextDouble() - .5) * .5 : (rnd.nextDouble() * 2 - 1) * 1.3; o.r = .2; o.vida = 99; }
