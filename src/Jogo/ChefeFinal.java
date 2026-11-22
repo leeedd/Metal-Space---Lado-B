@@ -651,7 +651,7 @@ final class ChefeFinal {
         if (batidaVisual > 0) { g.setColor(new Color(255, 40, 0, (int) (60 * batidaVisual * Math.min(1, (1 - rio / RIO_DUR) * 2)))); g.fillRect(0, TOPO, W, H - TOPO); } // cada batida pulsa a tela
     }
     private static final BufferedImage PLATEIA_ARTE = ler("plateia_inferno.png"), DESTROCOS = ler("destrocos_naves.png");
-    private static final BufferedImage FUNDO_ARTE = ler("inferno_fundo.png"), LAVA_ARTE = ler("inferno_lava.png");
+    private static final BufferedImage FUNDO_ARTE = ler("rio_lava_fundo.png") != null ? ler("rio_lava_fundo.png") : ler("inferno_fundo.png"), LAVA_ARTE = ler("inferno_lava.png");
     private static final BufferedImage RIO_ARTE = ler("inferno_rio_lava.png"), RESPINGO_ARTE = ler("respingo_lava.png");
     /** Naves de outros pilotos, escurecidas e avermelhadas: de longe, no inferno. */
     private static final BufferedImage[] NAVES_LONGE = navesLonge();

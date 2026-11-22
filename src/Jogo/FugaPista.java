@@ -31,6 +31,7 @@ final class FugaPista {
     double distancia;
     private static final BufferedImage GARGULA_ARTE = ler("demonio_gargula.png"), LAVA_TEX = ler("inferno_lava.png"), FUNDO_TEX = ler("inferno_fundo.png"), SAIDA = ler("climax_1_subida.png");
     /** Texturas em pixel art do corredor: rocha das paredes, estalactites do teto, lava do chao (4 quadros) e a caverna com a luz da saida no fundo. */
+    private static final BufferedImage BIFURCA_ART = ler("fuga_bifurcacao.png"); // esquerda = beco (vermelho), direita = saida (luz)
     private static final BufferedImage PAREDE_ART = ler("fuga_parede.png"), TETO_ART = ler("fuga_teto.png"); // texturas repetiveis do GPT; sem elas, recortes do fundo do inferno
     private static final BufferedImage ROCHA_TEX = PAREDE_ART != null ? PAREDE_ART : recorte(FUNDO_TEX, .05, .55, .9, .3), TETO_TEX = TETO_ART != null ? TETO_ART : recorte(FUNDO_TEX, 0, 0, 1, .22);
     private static BufferedImage recorte(BufferedImage b, double x, double y, double w, double h) { if (b == null) return null; return b.getSubimage((int) (b.getWidth() * x), (int) (b.getHeight() * y), (int) (b.getWidth() * w), (int) (b.getHeight() * h)); }
@@ -157,7 +158,10 @@ final class FugaPista {
                 java.awt.geom.Area ar = new java.awt.geom.Area(retangulo(-PAREDE, TETO, PAREDE, LAVA, o.z, sx, sy)); ar.subtract(new java.awt.geom.Area(retangulo(-PAREDE * .8, TETO * .78, PAREDE * .8, LAVA * .95, o.z, sx, sy)));
                 a.clip(ar); java.awt.Rectangle rb = ar.getBounds(); if (ROCHA_TEX != null) a.drawImage(ROCHA_TEX, rb.x, rb.y, rb.width, rb.height, null); else { a.setColor(new Color(60, 30, 30)); a.fill(ar); }
                 a.setColor(new Color(30, 4, 6, (int) (200 * Math.min(1, nev * 1.3)))); a.fill(ar); a.setClip(null); a.setColor(new Color(255, 120, 30, (int) (160 * (1 - nev)))); a.setStroke(new BasicStroke((float) Math.max(1, k * .02))); a.draw(retangulo(-PAREDE * .8, TETO * .78, PAREDE * .8, LAVA * .95, o.z, sx, sy)); break; }
-            case BIFURCA: { // o pilar que divide o tunel, e as duas bocas: luz da saida de um lado, brilho vermelho do outro
+            case BIFURCA: if (BIFURCA_ART != null) { Polygon q = retangulo(-PAREDE, TETO, PAREDE, LAVA, o.z, sx, sy); java.awt.Rectangle rq = q.getBounds(); a.clip(q); // a arte das duas bocas; espelhada quando a saida e a esquerda
+                    if (o.var == 1) a.drawImage(BIFURCA_ART, rq.x, rq.y, rq.width, rq.height, null); else a.drawImage(BIFURCA_ART, rq.x + rq.width, rq.y, -rq.width, rq.height, null);
+                    if (nev > .02f) { a.setColor(new Color(30, 4, 6, (int) (220 * Math.min(1f, nev)))); a.fill(q); } break; }
+            { // o pilar que divide o tunel, e as duas bocas: luz da saida de um lado, brilho vermelho do outro
                 for (int lado = 0; lado < 2; lado++) { boolean certo = lado == o.var; double x0 = lado == 0 ? -PAREDE : o.r, x1 = lado == 0 ? -o.r : PAREDE;
                     Polygon b = retangulo(x0, TETO, x1, LAVA, o.z + .05, sx, sy); java.awt.Rectangle rb = b.getBounds(); float cx = (float) rb.getCenterX(), cy = (float) rb.getCenterY(), rr = (float) Math.max(4, rb.width * .7);
                     a.setPaint(new java.awt.RadialGradientPaint(cx, cy, rr, new float[]{0f, .5f, 1f}, certo ? new Color[]{new Color(255, 255, 240), new Color(170, 200, 255, 230), new Color(40, 40, 80, 230)} : new Color[]{new Color(255, 60, 20), new Color(120, 0, 0, 240), new Color(20, 0, 0, 240)}));
