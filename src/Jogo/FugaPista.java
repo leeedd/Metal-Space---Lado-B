@@ -31,7 +31,8 @@ final class FugaPista {
     double distancia;
     private static final BufferedImage GARGULA_ARTE = ler("demonio_gargula.png"), LAVA_TEX = ler("inferno_lava.png"), FUNDO_TEX = ler("inferno_fundo.png"), SAIDA = ler("climax_1_subida.png");
     /** Texturas em pixel art do corredor: rocha das paredes, estalactites do teto, lava do chao (4 quadros) e a caverna com a luz da saida no fundo. */
-    private static final BufferedImage ROCHA_TEX = recorte(FUNDO_TEX, .05, .55, .9, .3), TETO_TEX = recorte(FUNDO_TEX, 0, 0, 1, .22);
+    private static final BufferedImage PAREDE_ART = ler("fuga_parede.png"), TETO_ART = ler("fuga_teto.png"); // texturas repetiveis do GPT; sem elas, recortes do fundo do inferno
+    private static final BufferedImage ROCHA_TEX = PAREDE_ART != null ? PAREDE_ART : recorte(FUNDO_TEX, .05, .55, .9, .3), TETO_TEX = TETO_ART != null ? TETO_ART : recorte(FUNDO_TEX, 0, 0, 1, .22);
     private static BufferedImage recorte(BufferedImage b, double x, double y, double w, double h) { if (b == null) return null; return b.getSubimage((int) (b.getWidth() * x), (int) (b.getHeight() * y), (int) (b.getWidth() * w), (int) (b.getHeight() * h)); }
 
     /** Avanca o mundo: tudo vem na direcao da nave na velocidade dela; mais longe na fuga, mais denso. */
