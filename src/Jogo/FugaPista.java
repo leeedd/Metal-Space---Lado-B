@@ -26,7 +26,10 @@ final class FugaPista {
     private final Random rnd = new Random(11);
     private double proxObj = 1.5, proxDesmorone = 9;
     double distancia;
-    private static final BufferedImage GARGULA_ARTE = ler("demonio_gargula.png");
+    private static final BufferedImage GARGULA_ARTE = ler("demonio_gargula.png"), LAVA_TEX = ler("inferno_lava.png"), FUNDO_TEX = ler("inferno_fundo.png"), SAIDA = ler("climax_1_subida.png");
+    /** Texturas em pixel art do corredor: rocha das paredes, estalactites do teto, lava do chao (4 quadros) e a caverna com a luz da saida no fundo. */
+    private static final BufferedImage ROCHA_TEX = recorte(FUNDO_TEX, .05, .55, .9, .3), TETO_TEX = recorte(FUNDO_TEX, 0, 0, 1, .22);
+    private static BufferedImage recorte(BufferedImage b, double x, double y, double w, double h) { if (b == null) return null; return b.getSubimage((int) (b.getWidth() * x), (int) (b.getHeight() * y), (int) (b.getWidth() * w), (int) (b.getHeight() * h)); }
 
     /** Avanca o mundo: tudo vem na direcao da nave na velocidade dela; mais longe na fuga, mais denso. */
     void atualizar(double dt, double vel, double sx, double sy, double progresso, FugaFinal f) {
@@ -78,6 +81,7 @@ final class FugaPista {
     static double py(double y, double z, double sy) { return CY + (y - sy) * F / z; }
     void desenhar(Graphics2D g, double sx, double sy, double tempo, double colapso) {
         g.setColor(new Color(30, 4, 6)); g.fillRect(0, 0, 960, 600);
+        if (SAIDA != null) { int bw = (int) (F / LONGE * PAREDE * 2 * 1.9), bh = bw * 600 / 960, bx = (int) px(0, LONGE, sx) - bw / 2, by = (int) py(-.05, LONGE, sy) - bh / 2; g.drawImage(SAIDA, bx, by, bw, bh, null); } // la no fundo: a caverna com a luz da saida
         // o corredor em fatias, do fundo para a frente; as faixas andam com a distancia (sensacao de velocidade)
         double[] zs = new double[34]; for (int i = 0; i < zs.length; i++) zs[i] = LONGE * Math.pow(.86, i); // fatias mais juntas perto
         for (int i = 0; i < zs.length - 1; i++) {
@@ -85,10 +89,18 @@ final class FugaPista {
             Color lava = mistura(banda % 2 == 0 ? new Color(255, 120, 20) : new Color(220, 70, 10), new Color(90, 10, 5), nev);
             Color parede = mistura(banda % 2 == 0 ? new Color(70, 30, 30) : new Color(52, 22, 24), new Color(40, 6, 8), nev);
             Color teto = mistura(banda % 2 == 0 ? new Color(40, 18, 22) : new Color(30, 12, 16), new Color(30, 4, 6), nev);
-            quad(g, lava, -PAREDE, LAVA, PAREDE, LAVA, z0, z1, sx, sy, true);
-            quad(g, teto, -PAREDE, TETO, PAREDE, TETO, z0, z1, sx, sy, true);
-            quad(g, parede, -PAREDE, TETO, -PAREDE, LAVA, z0, z1, sx, sy, false);
-            quad(g, parede, PAREDE, TETO, PAREDE, LAVA, z0, z1, sx, sy, false);
+            // texturas continuas ao longo do corredor: a coordenada da arte acompanha a distancia (z + distancia), sem saltos entre fatias
+            double u0 = (z0 + distancia), u1 = (z1 + distancia);
+            if (LAVA_TEX != null) { int fh = LAVA_TEX.getHeight() / 4, q = (int) (tempo * 6) % 4, base = fh / 2, alt = fh - base - 2; double k = alt / 5.0; // so a parte de baixo, solida, da faixa de lava
+                int a0 = (int) Math.floorMod((long) (u1 * k), (long) alt), h = Math.max(2, (int) ((u0 - u1) * k)); if (a0 + h > alt) a0 = alt - h;
+                texturizar(g, LAVA_TEX, 0, q * fh + base + Math.max(0, a0), LAVA_TEX.getWidth(), Math.min(h, alt), -PAREDE, LAVA, PAREDE, LAVA, z0, z1, sx, sy, nev * .8f); }
+            else quad(g, lava, -PAREDE, LAVA, PAREDE, LAVA, z0, z1, sx, sy, true);
+            if (ROCHA_TEX != null) { int tw = ROCHA_TEX.getWidth(); double k = tw / 30.0; int a0 = (int) Math.floorMod((long) (u1 * k), (long) tw), w = Math.max(28, (int) ((u0 - u1) * k)); // perto: mais detalhe, sem borrar if (a0 + w > tw) a0 = tw - w;
+                texturizar(g, ROCHA_TEX, a0, 0, w, ROCHA_TEX.getHeight(), -PAREDE, TETO, -PAREDE, LAVA, z0, z1, sx, sy, nev); texturizar(g, ROCHA_TEX, tw - a0 - w, 0, w, ROCHA_TEX.getHeight(), PAREDE, TETO, PAREDE, LAVA, z0, z1, sx, sy, nev); }
+            else { quad(g, parede, -PAREDE, TETO, -PAREDE, LAVA, z0, z1, sx, sy, false); quad(g, parede, PAREDE, TETO, PAREDE, LAVA, z0, z1, sx, sy, false); }
+            if (TETO_TEX != null) { int th = TETO_TEX.getHeight(); double k = th / 10.0; int a0 = (int) Math.floorMod((long) (u1 * k), (long) th), h = Math.max(1, (int) ((u0 - u1) * k)); if (a0 + h > th) a0 = th - h;
+                texturizar(g, TETO_TEX, 0, a0, TETO_TEX.getWidth(), h, -PAREDE, TETO, PAREDE, TETO, z0, z1, sx, sy, Math.min(1f, nev + .25f)); }
+            else quad(g, teto, -PAREDE, TETO, PAREDE, TETO, z0, z1, sx, sy, true);
             if (banda % 4 == 1) { g.setColor(new Color(255, 110, 30, (int) (170 * (1 - nev)))); for (int l = -1; l <= 1; l += 2) { double xw = l * PAREDE; g.drawLine((int) px(xw, z0, sx), (int) py(TETO + .4, z0, sy), (int) px(xw, z1, sx), (int) py(LAVA - .3, z1, sy)); } } // veios de lava nas paredes
             if (banda % 3 == 0) { g.setColor(new Color(255, 200, 80, (int) (120 * (1 - nev)))); int yl = (int) py(LAVA, z1, sy); g.drawLine((int) px(-PAREDE, z1, sx), yl, (int) px(PAREDE, z1, sx), yl); } // crista brilhando da lava
         }
@@ -105,6 +117,13 @@ final class FugaPista {
         for (double[] e : estouros) { double z = Math.max(.4, e[2]); int x = (int) px(e[0], z, sx), y = (int) py(e[1], z, sy), s = (int) (e[4] * F / z * (.3 + e[3] * 1.6)); float a = (float) (1 - e[3] / .5);
             g.setColor(new Color(255, 200, 80, (int) (230 * a))); g.fillOval(x - s / 2, y - s / 2, s, s); g.setColor(new Color(255, 90, 20, (int) (200 * a))); g.fillOval(x - s / 3, y - s / 3, s * 2 / 3, s * 2 / 3); }
         if (colapso > 0) { g.setColor(new Color(255, 40, 0, (int) (90 * colapso))); g.fillRect(0, 0, 960, 600); } // o colapso alcancando por tras
+    }
+    /** Uma fatia do corredor com um pedaco da textura esticado no trapezio em perspectiva, escurecida pela nevoa ao longe. */
+    private void texturizar(Graphics2D g, BufferedImage tex, int sx0, int sy0, int sw, int sh, double x0, double y0, double x1, double y1, double za, double zb, double sx, double sy, float nevoa) {
+        Polygon p = new Polygon(); p.addPoint((int) px(x0, za, sx), (int) py(y0, za, sy)); p.addPoint((int) px(x1, za, sx), (int) py(y1, za, sy)); p.addPoint((int) px(x1, zb, sx), (int) py(y1, zb, sy)); p.addPoint((int) px(x0, zb, sx), (int) py(y0, zb, sy));
+        java.awt.Rectangle r = p.getBounds(); if (r.width < 1 || r.height < 1) return; Graphics2D a = (Graphics2D) g.create(); java.awt.geom.Area ar = new java.awt.geom.Area(p); ar.add(new java.awt.geom.Area(new BasicStroke(3).createStrokedShape(p))); a.clip(ar); r = ar.getBounds(); // sem frestas entre as fatias
+        a.drawImage(tex, r.x, r.y, r.x + r.width + 1, r.y + r.height + 1, sx0, sy0, sx0 + sw, sy0 + sh, null);
+        if (nevoa > .02f) { a.setColor(new Color(40, 6, 8, (int) (230 * Math.min(1f, nevoa)))); a.fill(ar); } a.dispose();
     }
     private void quad(Graphics2D g, Color c, double x0, double y0, double x1, double y1, double za, double zb, double sx, double sy, boolean horizontal) {
         Polygon p = new Polygon();
