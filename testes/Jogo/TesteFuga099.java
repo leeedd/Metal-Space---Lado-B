@@ -25,12 +25,16 @@ public final class TesteFuga099 {
   // ate a saida: a ignicao da dobra no tempo certo (a 1a tentativa falha de proposito), depois a gargula e o soco no botao
   u.tecla(KeyEvent.VK_W,true);int falhas=0;boolean viuClimax=false;
   for(int i=0;i<60*400&&f.getFugaTeste()!=null;i++){for(int s=0;s<6;s++)u.sist[s]=Math.max(u.sist[s],90);u.escudo=100;
+   FugaPista.Obj bf=u.pista.proximaBifurca();if(bf!=null&&u.climax==null){boolean esq=bf.var==0;u.tecla(KeyEvent.VK_LEFT,esq&&u.sx>-.7);u.tecla(KeyEvent.VK_RIGHT,!esq&&u.sx<.7);}
    if(u.ignPasso>=0&&Math.abs(u.ignAgulha-.5)<.02){int k=KeyEvent.VK_1+u.ignTecla;u.tecla(k,true);u.tecla(k,false);if(u.ignPasso<0&&!u.ignOk)falhas++;}
    if(u.climax!=null){viuClimax=true;if(u.climax.esperandoBotao()&&u.climax.e>1.5){u.tecla(KeyEvent.VK_SPACE,true);u.tecla(KeyEvent.VK_SPACE,false);}}
    f.atualizarSimulacao(1.0/60);}
   ok(u.ignTentativa>=2&&falhas>=1,"a primeira ignicao falha de proposito e precisa reiniciar: tentativas "+u.ignTentativa);
   ok(viuClimax,"a gargula pega a nave perto da saida");
   ok(f.getFugaTeste()==null,"socou o botao e entrou em dobra");ok(f.getEtapaTeste().equals("CREDITOS"),"depois da fuga vem os creditos: "+f.getEtapaTeste());
+  // bifurcacao: o lado errado e um beco sem saida (fere e faz voltar)
+  FugaFinal u3=new FugaFinal(3);u3.intro=0;u3.pista.distancia=600;double d0=u3.pista.distancia;double e0=u3.sist[FugaFinal.ESTRUTURA]+u3.escudo;u3.escolheuCaminho(false);
+  ok(u3.pista.distancia<d0&&u3.sist[FugaFinal.ESTRUTURA]+u3.escudo<e0,"caminho errado: beco sem saida fere e faz voltar");
   // sem socar o botao: o casco rompe e volta ao ultimo setor
   FugaFinal u2=new FugaFinal(3);u2.ignOk=true;u2.climax=new FugaClimax(u2);for(int i=0;i<60*60&&u2.climax!=null;i++)u2.atualizar(1.0/60);
   ok(u2.climax==null&&!u2.terminou&&u2.progresso()<1,"sem apertar a tempo o casco rompe e volta ao setor");

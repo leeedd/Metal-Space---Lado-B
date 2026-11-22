@@ -120,6 +120,21 @@ final class FugaFinal {
         if (dano > 0) { ferir(ESTRUTURA, dano); int s = 1 + (int) (Math.random() * 5); ferir(s, dano * 1.3); if (sist[s] < 40) falar("DANO EM " + SISTEMAS[s] + "!"); }
         impacto = 1; alarme = .8; SomJogo.tocar(dano > 0 ? SomJogo.Efeito.DANO : SomJogo.Efeito.ESCUDO);
     }
+    /** Passou por uma bifurcacao: o lado certo leva a saida; o errado e um beco sem saida que desaba. */
+    void escolheuCaminho(boolean certo) {
+        if (certo) { falar("CAMINHO CERTO! A SAIDA ESTA MAIS PERTO."); SomJogo.tocar(SomJogo.Efeito.CONFIRMAR); return; }
+        falar("BECO SEM SAIDA! O TUNEL DESABOU!"); SomJogo.tocar(SomJogo.Efeito.EXPLOSAO_GRANDE); impacto = 1; alarme = 1;
+        double abs = Math.min(escudo, 30); escudo -= abs; ferir(ESTRUTURA, 18 - abs / 3); ferir(1 + (int) (Math.random() * 5), 12);
+        pista.distancia = Math.max(checkpoint * DIST_TOTAL / 4, pista.distancia - 160); pista.objs.removeIf(q -> q.tipo != FugaPista.BOCA); vel *= .4; // volta ate a bifurcacao, mais perto do colapso
+    }
+    /** Dica de rota no vidro: aponta o lado da saida quando a navegacao esta boa. */
+    private void desenharRota(Graphics2D g) {
+        FugaPista.Obj b = pista.proximaBifurca(); if (b == null || b.z > 34) return; boolean pisca = (int) (tempo * 6) % 2 == 0;
+        g.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.BOLD, 20)); String s;
+        if (sist[NAVEGACAO] < 40) s = "BIFURCACAO! ROTA: ???  (NAVEGACAO AVARIADA)"; else s = b.var == 0 ? "<<< BIFURCACAO: SAIDA A ESQUERDA" : "BIFURCACAO: SAIDA A DIREITA >>>";
+        java.awt.FontMetrics fm = g.getFontMetrics(); int x = (960 - fm.stringWidth(s)) / 2, y = 112; g.setColor(new Color(0, 0, 0, 170)); g.fillRect(x - 10, y - 20, fm.stringWidth(s) + 20, 28);
+        g.setColor(pisca ? new Color(255, 230, 80) : new Color(255, 255, 255)); g.drawString(s, x, y);
+    }
     void abateu(FugaPista.Obj o) { SomJogo.tocar(SomJogo.Efeito.EXPLOSAO); }
 
     void tecla(int k, boolean p) {
@@ -139,7 +154,7 @@ final class FugaFinal {
         if (intro > 0) { cabine.desenharIntro(g, this, nave); return; }
         Graphics2D v = (Graphics2D) g.create(); double tr = tremor; v.translate((Math.random() - .5) * tr, (Math.random() - .5) * tr);
         pista.desenhar(v, sx, sy, tempo, Math.max(0, Math.min(1, (colapsoDist - pista.distancia + 40) / 40)));
-        cabine.desenhar(v, this); v.dispose(); desenharIgnicao(g);
+        cabine.desenhar(v, this); v.dispose(); desenharRota(g); desenharIgnicao(g);
         if (recomeco > 0) { g.setColor(new Color(0, 0, 0, (int) (255 * Math.min(1, (2.5 - recomeco) / 1.2)))); g.fillRect(0, 0, 960, 600); cabine.texto(g, fala, 300, new Color(255, 80, 60)); }
     }
 }

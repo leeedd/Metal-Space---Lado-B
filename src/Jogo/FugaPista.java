@@ -17,14 +17,17 @@ import java.util.Random;
  */
 final class FugaPista {
     static final int CX = 480, CY = 205; static final double F = 330, PAREDE = 1.6, TETO = -1.1, LAVA = 1.0, LONGE = 42;
-    static final int ROCHA = 0, COLUNA = 1, GARGULA = 2, BOLHA = 3, DESMORONE = 4;
+    static final int ROCHA = 0, COLUNA = 1, GARGULA = 2, BOLHA = 3, DESMORONE = 4, BIFURCA = 5, BOCA = 6;
+    static final double DIST_BIFURCA = 430, DIST_BOCA = 55;
+    /** Curvatura do corredor: sobe ao longe (a nave esta subindo) e serpenteia para os lados. */
+    static double curvaY = .0085, curvaX;
     static final class Obj { int tipo, vida, var; double x, y, z, vx, vy, r, t; boolean vivo = true, passou; }
     static final class Tiro { double x, y, z, vx, vy; boolean missil, vivo = true; Obj alvo; double t; }
     final List<Obj> objs = new ArrayList<>();
     final List<Tiro> tiros = new ArrayList<>();
     final List<double[]> estouros = new ArrayList<>(); // x, y, z, t, tamanho
     private final Random rnd = new Random(11);
-    private double proxObj = 1.5, proxDesmorone = 9;
+    private double proxObj = 1.5, proxDesmorone = 9, proxBifurca = 300, proxBoca = 40;
     double distancia;
     private static final BufferedImage GARGULA_ARTE = ler("demonio_gargula.png"), LAVA_TEX = ler("inferno_lava.png"), FUNDO_TEX = ler("inferno_fundo.png"), SAIDA = ler("climax_1_subida.png");
     /** Texturas em pixel art do corredor: rocha das paredes, estalactites do teto, lava do chao (4 quadros) e a caverna com a luz da saida no fundo. */
@@ -33,24 +36,29 @@ final class FugaPista {
 
     /** Avanca o mundo: tudo vem na direcao da nave na velocidade dela; mais longe na fuga, mais denso. */
     void atualizar(double dt, double vel, double sx, double sy, double progresso, FugaFinal f) {
-        distancia += vel * dt;
+        distancia += vel * dt; curvaX = Math.sin(distancia / 260) * .006 + Math.sin(distancia / 97) * .003; // o tunel serpenteia
+        if (distancia >= proxBoca) { proxBoca += DIST_BOCA; Obj o = novo(BOCA); o.vida = 999; } // bocas de tunel de rocha passando
+        if (distancia >= proxBifurca) { proxBifurca += DIST_BIFURCA; for (Obj q : objs) if (q.z > LONGE - 12 && q.tipo != BOCA) q.vivo = false; objs.removeIf(q -> !q.vivo);
+            Obj o = novo(BIFURCA); o.var = rnd.nextInt(2); o.r = .3; o.vida = 999; } // o tunel se divide: so um lado leva a saida
         double dens = .55 + progresso * 1.1; // a dificuldade cresce com a subida
         if ((proxObj -= dt * dens * (.6 + vel / 40)) <= 0) { proxObj = .32 + rnd.nextDouble() * .3; criar(progresso, sx, sy); }
         if ((proxDesmorone -= dt) <= 0 && progresso > .15) { proxDesmorone = 7 - progresso * 3 + rnd.nextDouble() * 3; Obj o = novo(DESMORONE); o.x = rnd.nextBoolean() ? -.85 : .85; o.y = 0; o.r = .9; o.vida = 99; }
-        for (Obj o : objs) {
+        for (Obj o : new ArrayList<>(objs)) { // copia: escolher o caminho errado limpa a lista no meio da passada
             o.t += dt; o.z -= vel * dt;
             if (o.tipo == ROCHA) o.y += o.vy * dt; // despenca do teto
             else if (o.tipo == GARGULA) { o.z -= 6 * dt; double k = Math.min(1, dt * (o.z < 9 ? 2.6 : .9)); o.x += (sx - o.x) * k; o.y += (sy - o.y) * k; } // vem para cima da nave
             else if (o.tipo == BOLHA) { o.y += o.vy * dt; o.vy += 2.2 * dt; o.x += o.vx * dt; } // a lava explode em arco
+            if (!o.passou && o.z < .7 && o.tipo == BIFURCA) { o.passou = true; int lado = sx < 0 ? 0 : 1; if (Math.abs(sx) < o.r) f.colidiu(o); f.escolheuCaminho(lado == o.var); continue; }
+            if (!o.passou && o.z < .7 && o.tipo == BOCA) { o.passou = true; continue; }
             if (!o.passou && o.z < .7) { o.passou = true; if (o.vivo && acerta(o, sx, sy)) { f.colidiu(o); o.vivo = false; estouro(o.x, o.y, Math.max(.8, o.z), 1.2); } }
-            if (o.z < -1 || o.tipo == BOLHA && o.y > LAVA + .3) o.vivo = false;
+            if (o.z < -1 && o.tipo != BIFURCA || o.tipo == BIFURCA && o.z < -.2 || o.tipo == BOLHA && o.y > LAVA + .3) o.vivo = false;
         }
         objs.removeIf(o -> !o.vivo);
         for (Tiro t : tiros) {
             t.t += dt;
             if (t.missil) { if (t.alvo != null && t.alvo.vivo) { double k = Math.min(1, dt * 4); t.x += (t.alvo.x - t.x) * k; t.y += (t.alvo.y - t.y) * k; } t.z += (34 + vel) * dt; }
             else { t.z += (70 + vel) * dt; t.x += t.vx * dt; t.y += t.vy * dt; }
-            for (Obj o : objs) if (o.vivo && o.tipo != COLUNA && o.tipo != DESMORONE && Math.abs(o.z - t.z) < (t.missil ? 2.2 : 1.6) && Math.abs(o.x - t.x) < o.r + .08 && Math.abs(o.y - t.y) < o.r + .08) {
+            for (Obj o : objs) if (o.vivo && o.tipo != COLUNA && o.tipo != DESMORONE && o.tipo != BIFURCA && o.tipo != BOCA && Math.abs(o.z - t.z) < (t.missil ? 2.2 : 1.6) && Math.abs(o.x - t.x) < o.r + .08 && Math.abs(o.y - t.y) < o.r + .08) {
                 t.vivo = false; o.vida -= t.missil ? 4 : 1; if (o.vida <= 0) { o.vivo = false; estouro(o.x, o.y, o.z, o.tipo == GARGULA ? 1.6 : 1.1); f.abateu(o); } else estouro(t.x, t.y, t.z, .4); break; }
             if (t.z > LONGE || t.t > 2.5) t.vivo = false;
         }
@@ -72,13 +80,15 @@ final class FugaPista {
     }
     void estouro(double x, double y, double z, double tam) { estouros.add(new double[]{x, y, z, 0, tam}); }
     /** Bomba: limpa o que estiver perto (menos as paredes). */
-    int bomba() { int n = 0; for (Obj o : objs) if (o.z < 26 && o.tipo != DESMORONE && o.tipo != COLUNA) { o.vivo = false; estouro(o.x, o.y, o.z, 1.5); n++; } objs.removeIf(o -> !o.vivo); return n; }
+    int bomba() { int n = 0; for (Obj o : objs) if (o.z < 26 && o.tipo != DESMORONE && o.tipo != COLUNA && o.tipo != BIFURCA && o.tipo != BOCA) { o.vivo = false; estouro(o.x, o.y, o.z, 1.5); n++; } objs.removeIf(o -> !o.vivo); return n; }
+    /** A proxima bifurcacao a frente (null se nao ha). */
+    Obj proximaBifurca() { Obj m = null; for (Obj o : objs) if (o.tipo == BIFURCA && !o.passou && (m == null || o.z < m.z)) m = o; return m; }
     /** O alvo mais perto na frente da mira (para o missil). */
     Obj alvo(double sx, double sy) { Obj m = null; double best = 1e9; for (Obj o : objs) if (o.vivo && (o.tipo == GARGULA || o.tipo == ROCHA) && o.z > 2) { double d = o.z + 8 * Math.hypot(o.x - sx, o.y - sy); if (d < best) { best = d; m = o; } } return m; }
 
     // ---------------- desenho ----------------
-    static double px(double x, double z, double sx) { return CX + (x - sx) * F / z; }
-    static double py(double y, double z, double sy) { return CY + (y - sy) * F / z; }
+    static double px(double x, double z, double sx) { return CX + (x - sx + curvaX * z * z) * F / z; }
+    static double py(double y, double z, double sy) { return CY + (y - sy - curvaY * z * z) * F / z; }
     void desenhar(Graphics2D g, double sx, double sy, double tempo, double colapso) {
         g.setColor(new Color(30, 4, 6)); g.fillRect(0, 0, 960, 600);
         if (SAIDA != null) { int bw = (int) (F / LONGE * PAREDE * 2 * 1.9), bh = bw * 600 / 960, bx = (int) px(0, LONGE, sx) - bw / 2, by = (int) py(-.05, LONGE, sy) - bh / 2; g.drawImage(SAIDA, bx, by, bw, bh, null); } // la no fundo: a caverna com a luz da saida
@@ -142,6 +152,17 @@ final class FugaPista {
             case GARGULA: { if (GARGULA_ARTE != null) { int fw = GARGULA_ARTE.getWidth() / 4, fh = GARGULA_ARTE.getHeight(), q = o.z < 7 ? 3 : (int) (tempo * 9 + o.var) % 3, w = s * 2, h = w * fh / fw; a.drawImage(GARGULA_ARTE, x - w / 2, y - h / 2, x + w / 2, y + h / 2, q * fw, 0, q * fw + fw, fh, null); }
                 else { a.setColor(new Color(90, 90, 100)); a.fillOval(x - s / 2, y - s / 2, s, s); } break; }
             case BOLHA: { a.setColor(new Color(255, 150, 30)); a.fillOval(x - s / 2, y - s / 2, s, s); a.setColor(new Color(255, 240, 150)); a.fillOval(x - s / 4, y - s / 4, s / 2, s / 2); break; }
+            case BOCA: { // anel de rocha: a boca de um novo trecho de tunel
+                java.awt.geom.Area ar = new java.awt.geom.Area(retangulo(-PAREDE, TETO, PAREDE, LAVA, o.z, sx, sy)); ar.subtract(new java.awt.geom.Area(retangulo(-PAREDE * .8, TETO * .78, PAREDE * .8, LAVA * .95, o.z, sx, sy)));
+                a.clip(ar); java.awt.Rectangle rb = ar.getBounds(); if (ROCHA_TEX != null) a.drawImage(ROCHA_TEX, rb.x, rb.y, rb.width, rb.height, null); else { a.setColor(new Color(60, 30, 30)); a.fill(ar); }
+                a.setColor(new Color(30, 4, 6, (int) (200 * Math.min(1, nev * 1.3)))); a.fill(ar); a.setClip(null); a.setColor(new Color(255, 120, 30, (int) (160 * (1 - nev)))); a.setStroke(new BasicStroke((float) Math.max(1, k * .02))); a.draw(retangulo(-PAREDE * .8, TETO * .78, PAREDE * .8, LAVA * .95, o.z, sx, sy)); break; }
+            case BIFURCA: { // o pilar que divide o tunel, e as duas bocas: luz da saida de um lado, brilho vermelho do outro
+                for (int lado = 0; lado < 2; lado++) { boolean certo = lado == o.var; double x0 = lado == 0 ? -PAREDE : o.r, x1 = lado == 0 ? -o.r : PAREDE;
+                    Polygon b = retangulo(x0, TETO, x1, LAVA, o.z + .05, sx, sy); java.awt.Rectangle rb = b.getBounds(); float cx = (float) rb.getCenterX(), cy = (float) rb.getCenterY(), rr = (float) Math.max(4, rb.width * .7);
+                    a.setPaint(new java.awt.RadialGradientPaint(cx, cy, rr, new float[]{0f, .5f, 1f}, certo ? new Color[]{new Color(255, 255, 240), new Color(170, 200, 255, 230), new Color(40, 40, 80, 230)} : new Color[]{new Color(255, 60, 20), new Color(120, 0, 0, 240), new Color(20, 0, 0, 240)}));
+                    a.fill(b); if (!certo) { a.setColor(new Color(230, 220, 200, 200)); int s2 = Math.max(4, rb.width / 6); for (int c2 = 0; c2 < 3; c2++) { int xx = rb.x + rb.width / 4 + c2 * rb.width / 4 - s2 / 2, yy = (int) (rb.y + rb.height * .65); a.fillOval(xx, yy, s2, s2); a.setColor(Color.BLACK); a.fillOval(xx + s2 / 5, yy + s2 / 3, s2 / 4, s2 / 4); a.fillOval(xx + s2 * 3 / 5, yy + s2 / 3, s2 / 4, s2 / 4); a.setColor(new Color(230, 220, 200, 200)); } } } // caveiras no caminho errado
+                Polygon pil = retangulo(-o.r, TETO, o.r, LAVA, o.z, sx, sy); a.clip(pil); java.awt.Rectangle rp = pil.getBounds(); if (ROCHA_TEX != null) a.drawImage(ROCHA_TEX, rp.x, rp.y, rp.width, rp.height, null); else { a.setColor(new Color(60, 30, 30)); a.fill(pil); }
+                a.setColor(new Color(30, 4, 6, (int) (180 * nev))); a.fill(pil); break; }
             case DESMORONE: { double x0 = o.x < 0 ? -PAREDE : o.x - o.r, x1 = o.x < 0 ? o.x + o.r : PAREDE; Polygon p = new Polygon();
                 p.addPoint((int) px(x0, o.z, sx), (int) py(TETO, o.z, sy)); p.addPoint((int) px(x1, o.z, sx), (int) py(TETO, o.z, sy)); p.addPoint((int) px(x1, o.z, sx), (int) py(LAVA, o.z, sy)); p.addPoint((int) px(x0, o.z, sx), (int) py(LAVA, o.z, sy));
                 a.setColor(mistura(new Color(75, 35, 35), new Color(40, 6, 8), nev)); a.fillPolygon(p); a.setColor(new Color(255, 120, 30, (int) (160 * (1 - nev)))); a.setStroke(new BasicStroke((float) Math.max(1, k * .02)));
@@ -149,6 +170,7 @@ final class FugaPista {
         }
         a.dispose();
     }
+    private static Polygon retangulo(double x0, double y0, double x1, double y1, double z, double sx, double sy) { Polygon p = new Polygon(); p.addPoint((int) px(x0, z, sx), (int) py(y0, z, sy)); p.addPoint((int) px(x1, z, sx), (int) py(y0, z, sy)); p.addPoint((int) px(x1, z, sx), (int) py(y1, z, sy)); p.addPoint((int) px(x0, z, sx), (int) py(y1, z, sy)); return p; }
     static Color mistura(Color a, Color b, float t) { return new Color((int) (a.getRed() + (b.getRed() - a.getRed()) * t), (int) (a.getGreen() + (b.getGreen() - a.getGreen()) * t), (int) (a.getBlue() + (b.getBlue() - a.getBlue()) * t)); }
     private static BufferedImage ler(String n) { java.net.URL u = FugaPista.class.getResource("/ImagemIcon/" + n); if (u == null) return null; try { return javax.imageio.ImageIO.read(u); } catch (java.io.IOException e) { return null; } }
 }
