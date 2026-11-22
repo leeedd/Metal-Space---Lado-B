@@ -191,8 +191,8 @@ final class FugaCockpit {
     private void maos(Graphics2D g, FugaFinal f) {
         if (MAOS != null) { int c = MAOS.getWidth() / 6, t = 165;
             int qe = f.chaveBomba > 0 ? 2 : f.acelera ? 1 : 0, ye = H - t + 30 - (int) (f.potencia * 24); // a mao esquerda sobe com a alavanca
-            g.drawImage(MAOS, 0, ye, t, ye + t, qe * c, 0, qe * c + c, c, null);
-            int qd = f.empurrando ? 5 : f.polegar > 0 ? 4 : f.gatilho > 0 ? 3 : f.manX < -.4 ? 1 : f.manX > .4 ? 2 : 0, xd = W - t + 6 + (int) (f.manX * 8), yd = H - t + 30 + (int) (f.manY * 8);
+            g.drawImage(MAOS, MAO_X, ye, MAO_X + t, ye + t, qe * c, 0, qe * c + c, c, null);
+            int qd = f.empurrando ? 5 : f.polegar > 0 ? 4 : f.gatilho > 0 ? 3 : f.manX < -.4 ? 1 : f.manX > .4 ? 2 : 0, xd = W - t - MAO_X + (int) (f.manX * 8), yd = H - t + 30 + (int) (f.manY * 8);
             if (!f.semMaoDireita) g.drawImage(MAOS, xd, yd, xd + t, yd + t, qd * c, c, qd * c + c, c * 2, null); return; }
         int lx = 236, ly = (int) (575 - 140 * f.potencia); // trilho da alavanca
         g.setColor(new Color(15, 15, 15)); g.fillRoundRect(lx - 5, 425, 10, 160, 6, 6);
@@ -206,6 +206,7 @@ final class FugaCockpit {
         if (MAOS == null && !f.semMaoDireita) { Graphics2D m = (Graphics2D) g.create(); m.translate(tx, ty); m.scale(1.9, 1.9); m.translate(-tx, -ty); luva(m, tx, ty, f.gatilho > 0, f.polegar > 0, false, false); m.dispose(); }
     }
     /** Mao direita num quadro qualquer da folha (o soco no botao da dobra). */
+    static final int MAO_X = 190; // as maos perto do centro, como quem pilota sentado
     void maoDireita(Graphics2D g, int q, int x, int y, int t) {
         if (MAOS == null) { Graphics2D m = (Graphics2D) g.create(); m.translate(x + t / 2, y + t / 2); m.scale(1.9, 1.9); m.translate(-(x + t / 2), -(y + t / 2)); luva(m, x + t / 2, y + t / 2, false, false, false, false); m.dispose(); return; }
         int c = MAOS.getWidth() / 6; g.drawImage(MAOS, x, y, x + t, y + t, q * c, c, q * c + c, c * 2, null);
