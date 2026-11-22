@@ -113,7 +113,7 @@ final class FugaPista {
             if (TETO_TEX != null) { int th = TETO_TEX.getHeight(); double k = th / 10.0; int a0 = (int) Math.floorMod((long) (u1 * k), (long) th), h = Math.max(1, (int) ((u0 - u1) * k)); if (a0 + h > th) a0 = th - h;
                 texturizar(g, TETO_TEX, 0, a0, TETO_TEX.getWidth(), h, -PAREDE, TETO, PAREDE, TETO, z0, z1, sx, sy, Math.min(1f, nev + .25f)); }
             else quad(g, teto, -PAREDE, TETO, PAREDE, TETO, z0, z1, sx, sy, true);
-            if (banda % 4 == 1) { g.setColor(new Color(255, 110, 30, (int) (170 * (1 - nev)))); for (int l = -1; l <= 1; l += 2) { double xw = l * PAREDE; g.drawLine((int) px(xw, z0, sx), (int) py(TETO + .4, z0, sy), (int) px(xw, z1, sx), (int) py(LAVA - .3, z1, sy)); } } // veios de lava nas paredes
+            if (banda % 4 == 1 && ROCHA_TEX == null) { g.setColor(new Color(255, 110, 30, (int) (170 * (1 - nev)))); for (int l = -1; l <= 1; l += 2) { double xw = l * PAREDE; g.drawLine((int) px(xw, z0, sx), (int) py(TETO + .4, z0, sy), (int) px(xw, z1, sx), (int) py(LAVA - .3, z1, sy)); } } // veios de lava nas paredes
             if (banda % 3 == 0) { g.setColor(new Color(255, 200, 80, (int) (120 * (1 - nev)))); int yl = (int) py(LAVA, z1, sy); g.drawLine((int) px(-PAREDE, z1, sx), yl, (int) px(PAREDE, z1, sx), yl); } // crista brilhando da lava
         }
         java.util.Random br = new java.util.Random(3); for (int i = 0; i < 70; i++) { double bx = br.nextDouble() * 3 - 1.5, by = br.nextDouble() * 2 - 1, bz = LONGE - ((br.nextDouble() * LONGE + distancia * 1.3) % LONGE); if (bz < .5) continue; // brasas voando na direcao da cabine

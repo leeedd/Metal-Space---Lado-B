@@ -51,12 +51,23 @@ final class FugaCockpit {
         if (f.tempo < FugaFinal.INTRO + .7) { g.setColor(new Color(0, 0, 0, (int) (255 * Math.max(0, Math.min(1, 1 - (f.tempo - FugaFinal.INTRO) / .7))))); g.fillRect(0, 0, W, H); } // entra na cabine
     }
     // ---------------- vidro: rachaduras, reflexo e a mira ----------------
+    private static final BufferedImage[] RACHA = new BufferedImage[5];
+    /** Rachaduras no vidro em pixel art: desenhadas numa tela 1/3 sem suavizacao (pixel por pixel) e ampliadas sem filtro. */
+    private static BufferedImage rachaduras(int n) {
+        BufferedImage b = new BufferedImage(W / 3, H / 3, BufferedImage.TYPE_INT_ARGB); java.util.Random r = new java.util.Random(5);
+        for (int k = 0; k < n; k++) { int ox = (k % 2 == 0 ? 110 + r.nextInt(120) : 700 + r.nextInt(150)) / 3, oy = (60 + r.nextInt(250)) / 3;
+            for (int i = 0; i < 7; i++) { double an = i * .9 + r.nextDouble(); int len = (30 + r.nextInt(90)) / 3; double x = ox, y = oy;
+                for (int s = 0; s < len; s++) { an += (r.nextDouble() - .5) * .5; x += Math.cos(an); y += Math.sin(an); int px = (int) x, py = (int) y; if (px < 1 || py < 1 || px >= b.getWidth() - 1 || py >= b.getHeight() - 1) break;
+                    b.setRGB(px, py, 0xF0EAF6FF); if ((b.getRGB(px + 1, py + 1) >>> 24) == 0) b.setRGB(px + 1, py + 1, 0x9060708A); // linha clara com sombra de 1 pixel
+                    if (s == len / 2 && r.nextInt(3) == 0) { double a2 = an + (r.nextBoolean() ? .9 : -.9); double x2 = x, y2 = y; for (int t = 0; t < len / 3; t++) { x2 += Math.cos(a2); y2 += Math.sin(a2); int qx = (int) x2, qy = (int) y2; if (qx < 1 || qy < 1 || qx >= b.getWidth() - 1 || qy >= b.getHeight() - 1) break; b.setRGB(qx, qy, 0xD0E6F2FF); } } } }
+            b.setRGB(ox, oy, 0xFFFFFFFF); b.setRGB(ox + 1, oy, 0xFFFFFFFF); b.setRGB(ox, oy + 1, 0xFFFFFFFF); } // o ponto do impacto
+        BufferedImage o = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB); Graphics2D g = o.createGraphics(); g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR); g.drawImage(b, 0, 0, W, H, null); g.dispose(); return o;
+    }
     private void vidro(Graphics2D g, FugaFinal f) {
         Graphics2D a = (Graphics2D) g.create(); a.clip(VIDRO);
         a.setColor(new Color(255, 255, 255, 18)); a.fillPolygon(new int[]{140, 260, 120, 60}, new int[]{40, 40, 395, 395}, 4); // reflexo
         a.setColor(new Color(luz.getRed(), luz.getGreen(), luz.getBlue(), 150)); int cx = FugaPista.CX, cy = FugaPista.CY; a.drawOval(cx - 22, cy - 22, 44, 44); a.drawLine(cx - 34, cy, cx - 12, cy); a.drawLine(cx + 12, cy, cx + 34, cy); a.drawLine(cx, cy - 34, cx, cy - 12); // mira
-        double e = f.sist[FugaFinal.ESTRUTURA]; if (e < 65) { a.setColor(new Color(230, 240, 255, 170)); a.setStroke(new BasicStroke(1.5f)); java.util.Random r = new java.util.Random(5);
-            int n = e < 30 ? 4 : e < 50 ? 2 : 1; for (int k = 0; k < n; k++) { int ox = k % 2 == 0 ? 110 + r.nextInt(120) : 700 + r.nextInt(150), oy = 60 + r.nextInt(250); for (int i = 0; i < 7; i++) { double an = i * .9 + r.nextDouble(); int len = 30 + r.nextInt(90); a.drawLine(ox, oy, ox + (int) (Math.cos(an) * len), oy + (int) (Math.sin(an) * len)); } } }
+        double e = f.sist[FugaFinal.ESTRUTURA]; if (e < 65) { int n = e < 30 ? 4 : e < 50 ? 2 : 1; if (RACHA[n] == null) RACHA[n] = rachaduras(n); a.drawImage(RACHA[n], 0, 0, W, H, null); } // rachaduras em pixel art
         a.dispose();
     }
     // ---------------- moldura e painel (desenho provisorio de cada nave) ----------------
