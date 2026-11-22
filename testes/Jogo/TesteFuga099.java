@@ -18,7 +18,7 @@ public final class TesteFuga099 {
   int mi=u.misseis;u.tecla(KeyEvent.VK_F,true);u.tecla(KeyEvent.VK_F,false);ok(u.misseis==mi-1,"missil");
   int bo=u.bombas;u.tecla(KeyEvent.VK_B,true);u.tecla(KeyEvent.VK_B,false);ok(u.bombas==bo-1,"bomba");
   // dano: uma rocha na cara da nave fere estrutura ou escudo
-  double esc=u.escudo,est=u.sist[FugaFinal.ESTRUTURA];FugaPista.Obj o=new FugaPista.Obj();o.tipo=FugaPista.ROCHA;o.x=u.sx;o.y=u.sy;o.z=1.2;o.r=.3;o.vida=3;u.pista.objs.add(o);tick(f,.2);
+  double esc=u.escudo,est=u.sist[FugaFinal.ESTRUTURA];FugaPista.Obj o=new FugaPista.Obj();o.tipo=FugaPista.ROCHA;o.x=u.sx;o.y=u.sy;o.z=1.2;o.r=.3;o.vida=99;u.pista.tiros.clear();u.pista.objs.add(o);tick(f,.2);
   ok(u.escudo<esc||u.sist[FugaFinal.ESTRUTURA]<est,"colisao fere a nave");
   // motor ferido limita a potencia
   u.sist[FugaFinal.MOTORES]=20;ok(u.potenciaMax()<.6,"motor ferido nao chega na potencia toda");u.sist[FugaFinal.MOTORES]=100;

@@ -19,7 +19,7 @@ final class FugaFinal {
     final double[] sist = {100, 100, 100, 100, 100, 100};
     final int modelo; final FugaPista pista = new FugaPista(); final FugaCockpit cabine;
     // pilotagem
-    double sx, sy = .1, potencia = .45, vel = 14, tempo, intro = INTRO;
+    double sx, sy = .1, potencia = .2, vel = 8, tempo, intro = INTRO;
     boolean cima, baixo, esq, dir, acelera, desacelera, atirando, empurrando; double manX, manY; // empurrando: manche todo a frente (comando final); manX/manY: inclinacao do manche (-1 a 1), para as maos
     // armas
     int municao = 900, misseis = 10, bombas = 3; double calor, recargaMissil, cadencia, gatilho, polegar, chaveBomba;
@@ -34,7 +34,9 @@ final class FugaFinal {
     FugaFinal(int modelo) { this.modelo = modelo; cabine = new FugaCockpit(modelo); falar("INFERNO EM COLAPSO. SUBA PELO RIO DE LAVA ATE A SAIDA."); SomJogo.tocar(SomJogo.Efeito.ALERTA); }
 
     double progresso() { return Math.min(1, pista.distancia / DIST_TOTAL); }
-    double potenciaMax() { return .45 + .55 * sist[MOTORES] / 100; } // motor ferido nao chega na potencia toda
+    /** A subida comeca lenta e vai embalando: a potencia liberada cresce com o tempo e com a altura (como descer os circulos do inferno ao contrario). */
+    double embalo() { return Math.min(1, .3 + Math.max(0, tempo - INTRO) / 40 + progresso() * 1.2); }
+    double potenciaMax() { return (.45 + .55 * sist[MOTORES] / 100) * embalo(); } // motor ferido nao chega na potencia toda
     void falar(String s) { fala = s; falaT = 3.2; }
 
     void atualizar(double dt) {
@@ -43,8 +45,8 @@ final class FugaFinal {
         if (intro > 0) { intro = Math.max(0, intro - dt); return; }
         if (recomeco > 0) { if ((recomeco -= dt) <= 0) reiniciar(); return; }
         // alavanca de potencia: o jogador acelera e desacelera quando quiser
-        if (acelera) potencia = Math.min(potenciaMax(), potencia + dt * .45); if (desacelera) potencia = Math.max(0, potencia - dt * .55); potencia = Math.min(potencia, potenciaMax());
-        double alvoVel = 6 + 42 * potencia; vel += (alvoVel - vel) * Math.min(1, dt * 1.4);
+        if (acelera) potencia = Math.min(potenciaMax(), potencia + dt * .25); if (desacelera) potencia = Math.max(0, potencia - dt * .55); potencia = Math.min(potencia, potenciaMax());
+        double alvoVel = 6 + 42 * potencia; vel += (alvoVel - vel) * Math.min(1, dt * .7); // a nave pesa: ganha velocidade aos poucos
         // manche: quanto mais rapido, mais dura a manobra
         double ix = (esq ? -1 : 0) + (dir ? 1 : 0), iy = (cima ? -1 : 0) + (baixo ? 1 : 0); manX += (ix - manX) * Math.min(1, dt * 8); manY += (iy - manY) * Math.min(1, dt * 8);
         double resp = 1.9 - vel / 48 * .7; if (sist[NAVEGACAO] < 40) resp *= .75;
@@ -74,7 +76,7 @@ final class FugaFinal {
         ignicao(dt);
         if (progresso() >= 1 && ignOk) { climax = new FugaClimax(this); } // perto da saida: a gargula
     }
-    private void reiniciar() { double d = checkpoint * DIST_TOTAL / 4; pista.objs.clear(); pista.tiros.clear(); pista.distancia = d; colapsoDist = d - 140; for (int i = 0; i < 6; i++) sist[i] = Math.max(sist[i], 70); sist[ESTRUTURA] = 100; escudo = 100; potencia = .45; vel = 14; sx = 0; sy = .1; }
+    private void reiniciar() { double d = checkpoint * DIST_TOTAL / 4; pista.objs.clear(); pista.tiros.clear(); pista.distancia = d; colapsoDist = d - 140; for (int i = 0; i < 6; i++) sist[i] = Math.max(sist[i], 70); sist[ESTRUTURA] = 100; escudo = 100; potencia = .2; vel = 8; sx = 0; sy = .1; }
     void objsLimpar() { pista.objs.clear(); pista.tiros.clear(); atirando = acelera = desacelera = esq = dir = cima = baixo = false; }
     /** Nao socou o botao a tempo: o casco rompeu; volta ao ultimo setor e refaz o fim da subida. */
     void falhouClimax() { climax = null; semMaoDireita = false; empurrando = false; checkpoint = Math.min(checkpoint, 3); reiniciar(); for (int i = 0; i < 6; i++) sist[i] = 100; alarme = 0; falar("NAVE PERDIDA. VOLTANDO AO ULTIMO SETOR..."); }

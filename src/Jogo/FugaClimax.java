@@ -24,7 +24,7 @@ final class FugaClimax {
     static final double[] DUR = {2.6, 1.8, 2.4, 3.0, 5.0, 3.2, 3.0, 2.6, 2.4, 1.8, 8.0, 2.6};
     private static final int W = 960, H = 600, LY = 522;
     private static final BufferedImage CL1 = ler("climax_1_subida.png"), CL2 = ler("climax_2_pulo.png"), CL2B = ler("climax_2b_agarra.png"), SOCO = ler("maos_soco.png"), CL3 = ler("climax_3_afunda.png"), CL4 = ler("climax_4_explosao.png"), DOBRA_EXT = ler("braco_3_dobra.png"),
-        FUNDO = ler("inferno_fundo.png"), LAVA = ler("inferno_lava.png"), GARG = ler("demonio_gargula.png"), MAO = ler("gargula_mao.png"), TUNEL_ARTE = ler("hiperespaco_tunel.png");
+        FUNDO = ler("inferno_fundo.png"), LAVA = ler("inferno_lava.png"), GARG = ler("demonio_gargula.png"), MAO = ler("gargula_mao.png"), TUNEL_ARTE = ler("hiperespaco_tunel.png"), PORTAL_ARTE = ler("portal_dobra.png");
     private final FugaFinal f; int estado = SUBIDA; double e, t; private double soco = -1; private final Random rnd = new Random(7);
     FugaClimax(FugaFinal f) { this.f = f; f.objsLimpar(); }
 
@@ -221,8 +221,10 @@ final class FugaClimax {
     private void cabineDobra(Graphics2D g, FugaCockpit cabine) {
         FugaFinal.pixel(g, g2 -> { Graphics2D gg = g2;
         gg.setColor(new Color(6, 6, 26)); gg.fillRect(-20, -20, W + 40, H + 40);
-        if (estado == PORTAL) { double k = e / DUR[PORTAL]; portal(gg, 480, 200, 30 + k * k * 520, 1); }
-        else if (TUNEL_ARTE != null) { int fw = TUNEL_ARTE.getWidth() / 4, fh = TUNEL_ARTE.getHeight(), q = (int) (t * 12) % 4; gg.drawImage(TUNEL_ARTE, -40, -30, W + 40, 420, q * fw, 0, q * fw + fw, fh, null); }
+        if (estado == PORTAL && PORTAL_ARTE != null) { double k = e / DUR[PORTAL]; int fw = PORTAL_ARTE.getWidth() / 4, fh = PORTAL_ARTE.getHeight(), q = Math.min(3, (int) (k * 4)); double z = 1 + k * k * .35; int w = (int) (960 * z), h = (int) (w * fh / (double) fw);
+            gg.drawImage(PORTAL_ARTE, 480 - w / 2, 200 - h / 2, 480 + w / 2, 200 + h / 2, q * fw, 0, q * fw + fw, fh, null); } // o portal abrindo pelo vidro, chegando mais perto
+        else if (estado == PORTAL) { double k = e / DUR[PORTAL]; portal(gg, 480, 200, 30 + k * k * 520, 1); }
+        else if (TUNEL_ARTE != null) { int fw = TUNEL_ARTE.getWidth() / 4, fh = TUNEL_ARTE.getHeight(), q = (int) (t * (14 - 9 * Math.min(1, e / DUR[TUNEL]))) % 4; /* gira rapido e vai acalmando */ gg.drawImage(TUNEL_ARTE, -40, -30, W + 40, 420, q * fw, 0, q * fw + fw, fh, null); }
         else { Random r = new Random(5); for (int i = 0; i < 140; i++) { double a = r.nextDouble() * Math.PI * 2 + t * (1 + r.nextDouble()), d = ((r.nextDouble() + t * 1.6) % 1); int x1 = 480 + (int) (Math.cos(a) * d * 700), y1 = 200 + (int) (Math.sin(a) * d * 450), x2 = 480 + (int) (Math.cos(a - .15) * d * 520), y2 = 200 + (int) (Math.sin(a - .15) * d * 340);
             gg.setColor(i % 3 == 0 ? new Color(255, 255, 255, 200) : i % 3 == 1 ? new Color(90, 150, 255, 200) : new Color(170, 90, 255, 200)); gg.setStroke(new BasicStroke((float) (1 + d * 5))); gg.drawLine(x1, y1, x2, y2); } gg.setStroke(new BasicStroke(1));
             gg.setPaint(new RadialGradientPaint(480, 200, 90, new float[]{0f, 1f}, new Color[]{Color.WHITE, new Color(120, 160, 255, 0)})); gg.fillOval(390, 110, 180, 180); }
