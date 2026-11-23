@@ -1098,6 +1098,7 @@ implements ActionListener {
         graphics2D.setFont(new Font("Monospaced", Font.BOLD, 12));
         if(!naBase)textoContornado(graphics2D, partidaTeste ? "TESTE / SEM PLACAR — F8: PAINEL" : "F8: TESTAR SETORES", 420, 591, Color.CYAN);
         if (painelTeste) desenharPainelTeste(graphics2D);
+        TelaRadio.cockpit(modeloVisual); // a radio aparece dentro do cockpit da nave em uso
         PainelSom.desenhar(graphics2D);
         graphics2D.dispose();
     }
@@ -2726,9 +2727,9 @@ implements ActionListener {
                 repaint(); return;
             }
             if(codigo==KeyEvent.VK_F11||codigo==KeyEvent.VK_F12){if(teclasTeste.add(codigo))PainelSom.tecla(codigo);repaint();return;} // radio
-            if(codigo==KeyEvent.VK_F9||codigo==KeyEvent.VK_F10){
+            if(codigo==KeyEvent.VK_F9||codigo==KeyEvent.VK_F10||codigo==KeyEvent.VK_F7){
                 if(!teclasTeste.add(codigo))return;
-                if(codigo==KeyEvent.VK_F9&&emJogo){pausado=true;SomJogo.pausar(true);nave.soltarTeclas();espacoPressionado=geloPressionado=fogoPressionado=false;}
+                if((codigo==KeyEvent.VK_F9||codigo==KeyEvent.VK_F7)&&emJogo){pausado=true;SomJogo.pausar(true);nave.soltarTeclas();espacoPressionado=geloPressionado=fogoPressionado=false;}
                 PainelSom.tecla(codigo);repaint();return;
             }
             if(PainelSom.aberto()){PainelSom.tecla(codigo);repaint();return;}

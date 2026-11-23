@@ -23,14 +23,21 @@ public final class SomJogo {
  private static final long[] ULTIMO=new long[Efeito.values().length],CONTAGEM=new long[Efeito.values().length];
  private static final Preferences PREFS=Preferences.userNodeForPackage(SomJogo.class).node("audio098");
  private static volatile int musica=Math.max(0,Math.min(100,PREFS.getInt("musica",55))),efeitos=Math.max(0,Math.min(100,PREFS.getInt("efeitos",80)));
- private static volatile boolean mudo=PREFS.getBoolean("mudo",false),iniciado,pausado;
+ // o jogo sempre abre com som: quem silenciou (F10) numa partida nao abre o jogo mudo na proxima
+ private static volatile boolean mudo,iniciado,pausado;
  private static volatile String diagnostico="AUDIO INICIANDO";
  private static final boolean OFFLINE=Boolean.getBoolean("metalspace.audio.offline");
  private SomJogo(){}
  public static int musica(){return musica;}public static int efeitos(){return efeitos;}public static boolean mudo(){return mudo;}public static String diagnostico(){return OFFLINE?"AUDIO OFFLINE":diagnostico;}
  public static void volumeMusica(int v){musica=Math.max(0,Math.min(100,v));PREFS.putInt("musica",musica);}
  public static void volumeEfeitos(int v){efeitos=Math.max(0,Math.min(100,v));PREFS.putInt("efeitos",efeitos);}
- public static void alternarMudo(){mudo=!mudo;PREFS.putBoolean("mudo",mudo);}
+ public static void alternarMudo(){mudo=!mudo;}
+ /** O audio ja carregou e esta tocando (antes disso os sons pedidos se perdem). */
+ /** Nivel da musica agora (0..1), para o medidor VU; 0 se mudo. */
+ static float nivelMusica(){return mudo?0:Math.min(1,MOTOR.nivelMusica);}
+ static boolean ativo(){return "AUDIO ATIVO".equals(diagnostico);}
+ /** Toca um som gerado pelo codigo (ex.: guitarra do menu), mono 44,1 kHz; prioridade >= 4 abaixa a musica um instante. */
+ static void tocarAmostra(float[] a,float volume,int prioridade){if(OFFLINE||a==null)return;iniciar();MOTOR.emitir(a,volume,0,prioridade,true);}
  public static synchronized void iniciar(){if(iniciado||OFFLINE)return;iniciado=true;Thread t=new Thread(SomJogo::executar,"MetalSpace-Audio");t.setDaemon(true);t.start();}
  /** Para as previas em video: recebe cada efeito tocado (null no jogo). */
  static java.util.function.Consumer<Efeito> gravador;

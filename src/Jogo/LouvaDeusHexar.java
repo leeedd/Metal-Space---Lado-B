@@ -202,6 +202,9 @@ final class LouvaDeusHexar {
         }
     }
 
+    /** Retrato do Hexar nos creditos: o louva-deus guitarrista (primeiro quadro se for prancha). */
+    static BufferedImage retrato() { return CORPO == null ? null : CORPO.getWidth() >= CORPO.getHeight() * 3 ? CORPO.getSubimage(0, 0, CORPO.getWidth() / 4, CORPO.getHeight()) : CORPO; }
+
     private static BufferedImage ler(String n) {
         java.net.URL u = LouvaDeusHexar.class.getResource("/ImagemIcon/" + n);
         if (u == null) return null;

@@ -27,7 +27,7 @@ final class AberturaJogo extends JPanel {
     private final Runnable aoTerminar;
     private final Timer timer;
     private double tempo;
-    private boolean terminou, estourou;
+    private boolean terminou, estourou, trovejou;
     private long ultimo = System.nanoTime();
 
     AberturaJogo(Runnable aoTerminar) {
@@ -49,6 +49,9 @@ final class AberturaJogo extends JPanel {
 
     void atualizar(double dt) {
         tempo += dt;
+        // trovao quando a placa "UM JOGO ORIGINAL 2019" acende (o piscar dela e o relampago);
+        // espera o audio terminar de carregar (ate 1,5 s) para o som nao se perder
+        if (!trovejou && tempo >= .25 && (SomJogo.ativo() || tempo >= 1.5)) { trovejou = true; SomJogo.tocar(SomJogo.Efeito.TROVAO); }
         if (!estourou && tempo >= PLACA + LOGO * .72) { estourou = true; SomJogo.tocar(SomJogo.Efeito.EXPLOSAO_GRANDE); }
         if (tempo >= DURACAO) encerrar();
     }

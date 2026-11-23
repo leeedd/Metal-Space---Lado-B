@@ -47,7 +47,7 @@ public final class Sprites16Bits {
     }
     public static synchronized void preparar(int id, int forma) {
         BufferedImage base = carregar(id, forma);
-        if (base == null) throw new IllegalStateException("Arte obrigatoria ausente: " + id + "/" + forma);
+        if (base == null) return; // no Lado B os sprites antigos (do Lado A) foram retirados: quem desenha usa a arte nova
         // Musicos: nao deformar anatomia. Novas poses individuais ainda necessarias.
     }
 

@@ -196,7 +196,7 @@ public final class RadioMetal {
 
     private static void iniciar(String nome, Tarefa tarefa) {
         int g = GERACAO.incrementAndGet();
-        FonteContinua f = new FonteContinua(8, 1.5);
+        FonteContinua f = new FonteContinua(12, 3.0);
         fonte = f;
         SomJogo.fonteMusica(f, GANHO);
         Thread t = new Thread(() -> {

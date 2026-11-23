@@ -215,7 +215,7 @@ public final class CenaFinal {
         // personagens do jogo: a propria arte das lutas (Irmaos Ossada)
         BufferedImage s = id == -5 ? DESTEMIDOS : null;
         boolean sprite = s == null && id > 0;
-        if (sprite) s = Sprites16Bits.carregar(id, 2);
+        if (sprite) s = PosesChefes.temNovaArte(id) ? PosesChefes.obter(id, 2, 0) : id == 5 ? LouvaDeusHexar.retrato() : null; // arte do Lado B (sem os musicos do Lado A)
         if (s != null) {
             double e = Math.min(lado / (double) s.getWidth(), lado / (double) s.getHeight());
             int sw = (int) (s.getWidth() * e), sh = (int) (s.getHeight() * e);

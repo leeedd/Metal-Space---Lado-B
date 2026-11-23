@@ -13,7 +13,6 @@ package Jogo;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -24,7 +23,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-import java.util.Locale;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -35,12 +33,16 @@ extends JPanel {
     private static final long serialVersionUID = 1L;
     private final JFrame janela;
     private final transient Image arteInicioNeutro = Assets.imagem("ui_inicio_neutro.png");
+    /** Estrelas, asteroides e exaustao dos motores passando por tras da arte (feito na primeira vez que a tela aparece). */
+    private transient FundoInicioAnimado animado;
     private final transient Image arteHangar = Assets.imagem("ui_hangar_aprovado.png");
     private final transient Image arteTrofeus = Assets.imagem("ui_colecao_aprovada.png");
-    private static final String[] OPCOES = new String[]{"INICIAR", "HANGAR", "TROFEUS", "OPCOES", "CREDITOS", "SAIR"};
+    private static final String[] OPCOES = new String[]{"INICIAR", "HANGAR", "TROFEUS", "OPCOES", "RANKING", "SAIR"};
     private static final Rectangle[] AREAS_MENU = new Rectangle[]{new Rectangle(621, 284, 307, 47), new Rectangle(622, 334, 306, 46), new Rectangle(622, 382, 306, 46), new Rectangle(622, 430, 306, 46), new Rectangle(622, 479, 306, 46), new Rectangle(622, 526, 306, 46)};
     private static final Rectangle[] AREAS_HANGAR = new Rectangle[]{new Rectangle(18, 126, 180, 386), new Rectangle(204, 126, 180, 386), new Rectangle(390, 126, 180, 386), new Rectangle(576, 126, 180, 386), new Rectangle(762, 126, 180, 386)};
     private static final String[] REQUISITOS = new String[]{"NAVE INICIAL", "1 INSIGNIA", "3 INSIGNIAS", "5 INSIGNIAS", "ZERAR A CAMPANHA"};
+    /** Fundo dos botoes do menu na arte (para cobrir o rotulo antigo). */
+    private static final Color COR_BOTAO = new Color(10, 22, 38);
     private static final String[] NOMES_NAVES = new String[]{"RAPTOR MK-I", "SHADOW", "VALKYRIE", "BERSERKER", "METAL GOD"};
     private Pagina pagina = Pagina.INICIO;
     private final Timer animador;
@@ -62,7 +64,7 @@ extends JPanel {
             @Override
             public void keyReleased(KeyEvent e){teclasAudio.remove(e.getKeyCode());}
             @Override public void keyPressed(KeyEvent keyEvent) {
-                int n = keyEvent.getKeyCode();if((n==KeyEvent.VK_F9||n==KeyEvent.VK_F10||n==KeyEvent.VK_F11||n==KeyEvent.VK_F12)&&!teclasAudio.add(n))return;if(PainelSom.tecla(n)){repaint();return;}if(n>=37&&n<=40)SomJogo.tocar(SomJogo.Efeito.MENU);
+                int n = keyEvent.getKeyCode();if((n==KeyEvent.VK_F7||n==KeyEvent.VK_F9||n==KeyEvent.VK_F10||n==KeyEvent.VK_F11||n==KeyEvent.VK_F12)&&!teclasAudio.add(n))return;if(PainelSom.tecla(n)){repaint();return;}if(n>=37&&n<=40&&pagina!=Pagina.INICIO)SomJogo.tocar(SomJogo.Efeito.MENU); // no menu inicial quem soa e a guitarra
                 if(verPlacar){if(n==27||n==KeyEvent.VK_H)verPlacar=false;repaint();return;}
                 if(n==KeyEvent.VK_H){verPlacar=true;repaint();return;}
                 if (n == 27) {
@@ -73,8 +75,10 @@ extends JPanel {
                 if (TelaInicial.this.pagina == Pagina.INICIO) {
                     if (n == 38) {
                         TelaInicial.this.opcao = Math.floorMod(TelaInicial.this.opcao - 1, OPCOES.length);
+                        GuitarraMenu.passar(TelaInicial.this.opcao);
                     } else if (n == 40) {
                         TelaInicial.this.opcao = (TelaInicial.this.opcao + 1) % OPCOES.length;
+                        GuitarraMenu.passar(TelaInicial.this.opcao);
                     } else if (n == 10 || n == 32) {
                         TelaInicial.this.acionarMenu(TelaInicial.this.opcao);
                     }
@@ -109,6 +113,7 @@ extends JPanel {
         });
         this.animador = new Timer(33, actionEvent -> {
             this.tempoHangar += 0.033;
+            if (this.animado != null && this.pagina == Pagina.INICIO) this.animado.atualizar(0.033);
             if (this.pagina == Pagina.HANGAR || this.pagina == Pagina.INICIO) {
                 this.repaint();
             }
@@ -123,7 +128,7 @@ extends JPanel {
                 }
                 for (int i = 0; i < AREAS_MENU.length; ++i) {
                     if (!AREAS_MENU[i].contains(mouseEvent.getPoint())) continue;
-                    if(TelaInicial.this.opcao!=i)SomJogo.tocar(SomJogo.Efeito.MENU);TelaInicial.this.opcao = i;
+                    if(TelaInicial.this.opcao!=i)GuitarraMenu.passar(i);TelaInicial.this.opcao = i;
                     TelaInicial.this.repaint();
                     break;
                 }
@@ -138,7 +143,7 @@ extends JPanel {
                 if (TelaInicial.this.pagina == Pagina.INICIO) {
                     for (int i = 0; i < AREAS_MENU.length; ++i) {
                         if (!AREAS_MENU[i].contains(n, n2)) continue;
-                        if(TelaInicial.this.opcao!=i)SomJogo.tocar(SomJogo.Efeito.MENU);TelaInicial.this.opcao = i;
+                        if(TelaInicial.this.opcao!=i)GuitarraMenu.passar(i);TelaInicial.this.opcao = i;
                         TelaInicial.this.acionarMenu(i);
                         break;
                     }
@@ -173,7 +178,7 @@ extends JPanel {
         });
     }
 
-    private void acionarMenu(int n) {SomJogo.tocar(SomJogo.Efeito.CONFIRMAR);
+    private void acionarMenu(int n) {GuitarraMenu.confirmar(n);
         switch (n) {
             case 0: {
                 this.iniciarPartida();
@@ -253,30 +258,39 @@ extends JPanel {
             graphics2D.drawImage(this.arteHangar, n10, n11, n10 + n8, n11 + n9, n4, n5, n6, n7, null);
             TelaInicial.texto(graphics2D, NOMES_NAVES[i], n3 + 12, 352, 16, Color.WHITE);
             TelaInicial.texto(graphics2D, bl ? "LIBERADA" : "BLOQUEADA", n3 + 12, 376, 14, bl ? new Color(109, 239, 174) : new Color(255, 165, 112));
-            TelaInicial.texto(graphics2D, i == 0 ? "Disponivel no inicio" : (i == 4 ? "Concluir campanha" : REQUISITOS[i]), n3 + 12, 396, 12, new Color(170, 194, 218));
+            TelaInicial.texto(graphics2D, i == 0 ? "NO INÍCIO" : (i == 4 ? "ZERAR O JOGO" : REQUISITOS[i]), n3 + 12, 398, 13, new Color(170, 194, 218));
             graphics2D.setColor(new Color(42, 78, 111));
             graphics2D.drawLine(n3 + 12, 405, n3 + 168, 405);
-            PerfilNave perfilNave = PerfilNave.obter(i);
-            TelaInicial.atributoHangar(graphics2D, "VELOC.", perfilNave.velocidade + " px/s", n3, 426);
-            TelaInicial.atributoHangar(graphics2D, "PODER", perfilNave.dano + " / tiro", n3, 445);
-            TelaInicial.atributoHangar(graphics2D, "CASCO", perfilNave.casco + " pontos", n3, 464);
-            TelaInicial.atributoHangar(graphics2D, "DEFESA", perfilNave.defesa > 0 ? "-1 dano*" : "Padrao", n3, 483);
-            TelaInicial.atributoHangar(graphics2D, "CADENCIA", String.format(Locale.forLanguageTag("pt-BR"), "%.1f/s", 1.0 / perfilNave.intervalo), n3, 502);
+            String[] nomesAtr = {"VELOC.", "PODER", "CASCO", "DEFESA", "TIROS"};
+            for (int a = 0; a < 5; a++) TelaInicial.atributoHangar(graphics2D, nomesAtr[a], segmentos(a, i), n3, 416 + a * 19, bl2);
         }
         PerfilNave perfilNave = PerfilNave.obter(this.modeloSelecionado);
-        TelaInicial.texto(graphics2D, perfilNave.funcao + " | ESCUDO: " + perfilNave.escudo + "s | Atributos iniciais; melhorias evoluem durante a partida.", 20, 534, 13, new Color(187, 211, 234));
+        TelaInicial.texto(graphics2D, perfilNave.funcao + "  |  ESCUDO: " + perfilNave.escudo + " S", 20, 538, 13, new Color(187, 211, 234));
         stringArray = new String[]{"Versatil: combina casco, mobilidade e tiro sem extremos.", "340 px/s e tiro rapido; casco de 9 exige esquiva precisa.", "Tiro rapido e escudo de 26 segundos; proteja-se nos confrontos longos.", "16 de casco e dano dobrado por tiro; menor velocidade e cadencia.", "Dano dobrado, 16 de casco e blindagem: -1 por impacto, com minimo de 1."};
-        TelaInicial.texto(graphics2D, stringArray[this.modeloSelecionado], 20, 552, 12, new Color(134, 169, 198));
-        graphics2D.setColor(new Color(17, 35, 53));
-        graphics2D.fillRect(0, 562, 960, 38);
-        TelaInicial.texto(graphics2D, "[ESC] VOLTAR    [< / >] SELECIONAR", 20, 586, 14, Color.WHITE);
-        TelaInicial.texto(graphics2D, ProgressoJogo.modeloDisponivel(this.modeloSelecionado) ? "[ENTER] INICIAR" : "[ENTER] BLOQUEADA", 730, 586, 14, ProgressoJogo.modeloDisponivel(this.modeloSelecionado) ? new Color(109, 239, 174) : new Color(255, 165, 112));
+        TelaInicial.texto(graphics2D, stringArray[this.modeloSelecionado], 20, 560, 13, new Color(134, 169, 198));
+        boolean livre = ProgressoJogo.modeloDisponivel(this.modeloSelecionado);
+        rodape(graphics2D, new String[]{"ESC: VOLTAR", "SETAS: ESCOLHER NAVE", livre ? "ENTER: INICIAR" : "NAVE BLOQUEADA", "F9: OPÇÕES"},
+                new Color[]{Color.WHITE, Color.WHITE, livre ? new Color(109, 239, 174) : new Color(255, 165, 112), new Color(120, 220, 255)});
     }
 
-    private static void atributoHangar(Graphics2D graphics2D, String string, String string2, int n, int n2) {
-        TelaInicial.texto(graphics2D, string, n + 12, n2, 12, new Color(147, 179, 207));
-        graphics2D.setFont(new Font("Monospaced", 1, 12));
-        TelaInicial.texto(graphics2D, string2, n + 168 - graphics2D.getFontMetrics().stringWidth(string2), n2, 12, Color.WHITE);
+    /** Atributo do cartao: nome em fonte pixel e uma barra de 5 gomos (comparando as 5 naves). */
+    private static void atributoHangar(Graphics2D g, String nome, int gomos, int n, int y, boolean selecionada) {
+        TelaInicial.texto(g, nome, n + 12, y + 14, 13, new Color(147, 179, 207));
+        for (int k = 0; k < 5; k++) {
+            g.setColor(k < gomos ? (selecionada ? new Color(72, 224, 255) : new Color(150, 190, 220)) : new Color(30, 44, 62));
+            g.fillRect(n + 112 + k * 12, y + 2, 10, 10);
+        }
+    }
+
+    /** De 1 a 5 gomos: onde a nave fica entre a pior e a melhor das 5 nesse atributo. */
+    private static int segmentos(int atributo, int nave) {
+        double min = Double.MAX_VALUE, max = -Double.MAX_VALUE, v = 0;
+        for (int i = 0; i < 5; i++) {
+            PerfilNave p = PerfilNave.obter(i);
+            double x = atributo == 0 ? p.velocidade : atributo == 1 ? p.dano : atributo == 2 ? p.casco : atributo == 3 ? p.defesa : 1.0 / p.intervalo;
+            min = Math.min(min, x); max = Math.max(max, x); if (i == nave) v = x;
+        }
+        return max - min < 1e-9 ? 3 : 1 + (int) Math.round(4 * (v - min) / (max - min));
     }
 
     @Override
@@ -293,7 +307,12 @@ extends JPanel {
         switch (this.pagina) {
             case INICIO: {
                 graphics2D.drawImage(this.arteInicioNeutro, 0, 0, 960, 600, null);
+                if (this.animado == null) this.animado = novoAnimado();
+                this.animado.desenhar(graphics2D);
                 this.desenharLuzesInicio(graphics2D);
+                Rectangle rk = AREAS_MENU[4]; // a arte diz CREDITOS: cobre e escreve RANKING
+                graphics2D.setColor(COR_BOTAO); graphics2D.fillRect(rk.x + 14, rk.y + 9, rk.width - 28, rk.height - 18);
+                FontePixel.centro(graphics2D, "RANKING", rk.x + rk.width / 2, rk.y + rk.height / 2 - 10, 3, new Color(232, 238, 248));
                 Rectangle rectangle = AREAS_MENU[this.opcao];
                 graphics2D.setColor(new Color(174, 35, 7, (int)(65.0 + 45.0 * (1.0 + Math.sin(this.tempoHangar * 3.0)) / 2.0)));
                 graphics2D.fillRoundRect(rectangle.x + 4, rectangle.y + 4, rectangle.width - 8, rectangle.height - 8, 9, 9);
@@ -340,15 +359,20 @@ extends JPanel {
                 n = ProgressoJogo.temTrofeu(this.trofeuSelecionado) ? 1 : 0;
                 Medalhas.desenhar(graphics2D, this.trofeuSelecionado, n != 0, 735, 193, 132, -1.0);
                 TelaInicial.texto(graphics2D, n != 0 ? Recompensas.nome(this.trofeuSelecionado) : "INSIGNIA BLOQUEADA", 670, 371, 16, Color.WHITE);
-                TelaInicial.texto(graphics2D, n != 0 ? Recompensas.habilidade(this.trofeuSelecionado) : "Derrote o chefe", 670, 407, 13, new Color(175, 208, 231));
+                textoQuebrado(graphics2D, n != 0 ? Recompensas.habilidade(this.trofeuSelecionado) : "DERROTE O CHEFE", 670, 392, 2, new Color(175, 208, 231), 262);
                 TelaInicial.texto(graphics2D, "CONQUISTAS: " + ProgressoJogo.totalTrofeus() + "/8", 672, 463, 16, Color.ORANGE);
-                graphics2D.setColor(new Color(2, 5, 14, 231));
-                graphics2D.fillRect(0, 556, 960, 44);
-                TelaInicial.texto(graphics2D, "SETAS: SELECIONAR INSIGNIA                       ESC: VOLTAR", 56, 584, 16, Color.WHITE);
+                graphics2D.setColor(new Color(3, 8, 19));
+                graphics2D.fillRect(0, 536, 960, 64);
+                rodape(graphics2D, new String[]{"ESC: VOLTAR", "SETAS: ESCOLHER INSÍGNIA", "F9: OPÇÕES"}, new Color[]{Color.WHITE, Color.WHITE, new Color(120, 220, 255)});
                 break;
             }
-            case INFORMACOES: 
             case CREDITOS: {
+                graphics2D.drawImage(this.arteInicioNeutro, 0, 0, 960, 600, null);
+                Placar.desenhar(graphics2D, placar.ler(), "ESC: VOLTAR");
+                FontePixel.centro(graphics2D, "RÁDIO: FFMPEG (LGPL 3) - VEJA LICENCAS.TXT", 480, 562, 1, new Color(110, 120, 140));
+                break;
+            }
+            case INFORMACOES: {
                 graphics2D.drawImage(this.arteInicioNeutro, 0, 0, 960, 600, null);
                 graphics2D.setColor(new Color(2, 8, 20, 243));
                 graphics2D.fillRoundRect(135, 120, 725, 390, 15, 15);
@@ -369,15 +393,9 @@ extends JPanel {
                 break;
             }
         }
-        if(pagina==Pagina.INICIO){ // rodape: versao e placar na mesma linha, atalhos embaixo, numa faixa so
-            graphics2D.setFont(new Font("Monospaced",1,14));java.awt.FontMetrics fm=graphics2D.getFontMetrics();
-            String versao="0.9.8 ALPHA",placarTxt="[H] PLACAR DAS LENDAS";int xPlacar=26+fm.stringWidth(versao)+18;
-            int larg=Math.max(xPlacar+fm.stringWidth(placarTxt),26+graphics2D.getFontMetrics(new Font("Monospaced",1,12)).stringWidth("F9: OPCOES   F10: SILENCIAR"))-16+12;
-            graphics2D.setColor(new Color(1,7,18,215));graphics2D.fillRoundRect(16,548,larg,48,6,6);
-            graphics2D.setColor(new Color(90,120,170,170));graphics2D.drawRoundRect(16,548,larg-1,47,6,6);
-            textoContornado(graphics2D,versao,26,568,new Color(217,227,242));textoContornado(graphics2D,placarTxt,xPlacar,568,Color.WHITE);}
+        if(pagina==Pagina.INICIO&&!PainelSom.aberto())desenharBarraInicio(graphics2D);
         if(verPlacar)Placar.desenhar(graphics2D,placar.ler(),"ESC / H: VOLTAR");
-        graphics2D.setFont(new java.awt.Font("Monospaced",java.awt.Font.BOLD,12));textoContornado(graphics2D,"F9: OPCOES   F10: SILENCIAR",26,588,java.awt.Color.CYAN);PainelSom.desenhar(graphics2D);graphics2D.dispose();
+        PainelSom.desenhar(graphics2D);graphics2D.dispose();
     }
 
     private void desenharLuzesInicio(Graphics2D graphics2D) {
@@ -400,23 +418,57 @@ extends JPanel {
             graphics2D2.fillRect(n, n3, 2, 2 + n2 % 3);
         }
         graphics2D2.setClip(null);
-        if (Math.sin(this.tempoHangar * 2.6) > -0.4) {
-            TelaInicial.texto(graphics2D2, "ENTER PARA DECOLAR", 314, 576, 15, new Color(150, 232, 255));
-        }
         graphics2D2.dispose();
     }
 
-    /** Texto com contorno preto de 1 pixel, legivel sobre a arte (usa a fonte ja escolhida). */
-    private static void textoContornado(Graphics2D g, String s, int x, int y, Color cor) {
-        g.setColor(Color.BLACK);
-        for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) if (dx != 0 || dy != 0) g.drawString(s, x + dx, y + dy);
-        g.setColor(cor); g.drawString(s, x, y);
+    private FundoInicioAnimado novoAnimado() {
+        Rectangle menu = new Rectangle(AREAS_MENU[0]);
+        for (Rectangle r : AREAS_MENU) menu.add(r);
+        menu.grow(12, 12);
+        return new FundoInicioAnimado(this.arteInicioNeutro, menu, new Rectangle(0, 0, 960, 34), new Rectangle(0, 576, 960, 24));
     }
 
+    /** Rodape da tela inicial: uma faixa so, em fonte pixel, com versao, placar, decolar (piscando) e atalhos. */
+    private void desenharBarraInicio(Graphics2D g) {
+        g.setColor(new Color(1, 6, 16, 225)); g.fillRect(0, 576, 960, 24);
+        g.setColor(new Color(255, 120, 40, 170)); g.fillRect(0, 576, 960, 2);
+        String[] t = {"0.9.8 ALPHA", "[H] RANKING", "ENTER: DECOLAR", "F9: OPÇÕES", "F10: MUDO"};
+        Color[] c = {new Color(170, 185, 210), Color.WHITE, new Color(150, 232, 255), new Color(120, 220, 255), new Color(120, 220, 255)};
+        int soma = 0; for (String s : t) soma += FontePixel.largura(s, 2);
+        int vao = (960 - 32 - soma) / (t.length - 1), x = 16;
+        for (int i = 0; i < t.length; i++) {
+            boolean pisca = i == 2 && Math.sin(this.tempoHangar * 2.6) <= -0.4;
+            if (!pisca) FontePixel.desenhar(g, t[i], x, 583, 2, c[i]);
+            x += FontePixel.largura(t[i], 2) + vao;
+        }
+    }
+
+    /** Texto com contorno preto de 1 pixel, legivel sobre a arte (usa a fonte ja escolhida). */
+    /** Texto em fonte pixel; n2 e a linha de base (como no drawString) e n3 o tamanho antigo, que vira escala 1-3. */
     private static void texto(Graphics2D graphics2D, String string, int n, int n2, int n3, Color color) {
-        graphics2D.setFont(new Font("Monospaced", 1, n3));
-        graphics2D.setColor(color);
-        graphics2D.drawString(string, n, n2);
+        int e = n3 >= 24 ? 3 : n3 >= 13 ? 2 : 1;
+        FontePixel.desenhar(graphics2D, string, n, n2 - FontePixel.altura(e), e, color);
+    }
+
+    /** Texto em fonte pixel quebrado em linhas que cabem na largura; devolve o y depois da ultima linha. */
+    private static int textoQuebrado(Graphics2D g, String s, int x, int y, int e, Color cor, int largura) {
+        StringBuilder linha = new StringBuilder();
+        for (String p : s.split(" ")) {
+            String teste = linha.length() == 0 ? p : linha + " " + p;
+            if (FontePixel.largura(teste, e) > largura && linha.length() > 0) { FontePixel.desenhar(g, linha.toString(), x, y, e, cor); y += FontePixel.altura(e) + 6; linha = new StringBuilder(p); }
+            else linha = new StringBuilder(teste);
+        }
+        if (linha.length() > 0) { FontePixel.desenhar(g, linha.toString(), x, y, e, cor); y += FontePixel.altura(e) + 6; }
+        return y;
+    }
+
+    /** Rodape de qualquer tela: uma faixa so, embaixo, com as teclas espalhadas (fonte pixel). */
+    private static void rodape(Graphics2D g, String[] t, Color[] c) {
+        g.setColor(new Color(1, 6, 16, 235)); g.fillRect(0, 572, 960, 28);
+        g.setColor(new Color(255, 120, 40, 170)); g.fillRect(0, 572, 960, 2);
+        int soma = 0; for (String s : t) soma += FontePixel.largura(s, 2);
+        int vao = t.length > 1 ? (960 - 32 - soma) / (t.length - 1) : 0, x = t.length > 1 ? 16 : (960 - soma) / 2;
+        for (int i = 0; i < t.length; i++) { FontePixel.desenhar(g, t[i], x, 581, 2, c[i]); x += FontePixel.largura(t[i], 2) + vao; }
     }
 
     public static void abrir() {
@@ -428,9 +480,10 @@ extends JPanel {
             jFrame.setContentPane(telaInicial);
             jFrame.revalidate(); jFrame.repaint();
             telaInicial.requestFocusInWindow();
-            RadioMetal.retomar(); // volta a radio ou a playlist que o jogador deixou ligada
         }));
-        MusicaJogo.trocarSeDisponivel("abertura"); // musicas/abertura.wav se o jogador tiver; senao a trilha epica original
+        // a musica da entrada e a da radio (estacao, playlist ou trilha, como o jogador deixou): liga ja,
+        // antes da abertura, para nao comecar uma musica e trocar por outra no meio
+        RadioMetal.retomar();
         jFrame.setContentPane(abertura);
         jFrame.pack();
         jFrame.setResizable(false);
