@@ -95,7 +95,8 @@ final class AberturaJogo extends JPanel {
         if (LETRAS != null) { alfa(g, .12 + .88 * luz); g.drawImage(LETRAS, x, y, null); }
         if (fundo > 0) { alfa(g, fundo); g.drawImage(LOGO_IMG, x, y, null); }
         alfa(g, 1);
-        if (p > .72 && p < .8) { g.setColor(new Color(255, 255, 255, 150)); g.fillRect(0, 0, W, H); }
+        // clarao piscando 2x na tela quando o logo acende (como um relampago duplo)
+        if ((p > .72 && p < .755) || (p > .79 && p < .825)) { g.setColor(new Color(255, 255, 255, p < .76 ? 170 : 200)); g.fillRect(0, 0, W, H); }
     }
     private static void alfa(Graphics2D g, double a) { g.setComposite(AlphaComposite.SrcOver.derive((float) Math.max(0, Math.min(1, a)))); }
 

@@ -84,6 +84,8 @@ final class TelaRadio {
     private static double ponteiroX = -1;           // posicao animada do ponteiro no dial
     private static double giroSintonia;             // angulo do botao de sintonia (gira a cada troca)
     private static double arrasteAngulo; private static int arrastando = -1; private static double arrasteAcumulado;
+    /** x do mouse enquanto arrasta o cursor da chave (o cursor vai junto e encaixa ao soltar). */
+    private static int chaveArrasteX;
 
     // cockpit e espaco atras do radio
     private static final java.awt.image.BufferedImage[] COCKPIT = new java.awt.image.BufferedImage[5];
@@ -166,15 +168,22 @@ final class TelaRadio {
         FontePixel.centro(g, rotulo, r.x + r.width / 2, r.y + (r.height - FontePixel.altura(e)) / 2 + af, e, foco ? OURO : BRANCO);
     }
 
-    /** Chave TRILHA | RADIO | PLAYLIST: trilho da arte e o cursor vermelho na posicao atual. */
+    /** Posicao da chave (0 trilha, 1 radio, 2 playlist) mais perto do x dado. */
+    private static int posicaoChave(int x) { return Math.max(0, Math.min(2, (x - CHAVE.x) * 3 / CHAVE.width)); }
+
+    /** Chave TRILHA | RADIO | PLAYLIST: trilho da arte e o cursor vermelho na posicao atual (ou seguindo o mouse ao arrastar). */
     private static void chaveArte(Graphics2D g) {
         Rectangle r = CHAVE;
-        int pos = RadioMetal.modo() == RadioMetal.Modo.TRILHA ? 0 : RadioMetal.modo() == RadioMetal.Modo.RADIO ? 1 : 2, w3 = r.width / 3;
+        int w3 = r.width / 3;
+        boolean arrastandoChave = arrastando == F_CHAVE;
+        int pos = arrastandoChave ? posicaoChave(chaveArrasteX)
+                : RadioMetal.modo() == RadioMetal.Modo.TRILHA ? 0 : RadioMetal.modo() == RadioMetal.Modo.RADIO ? 1 : 2;
         g.drawImage(TRILHO, r.x, r.y, r.width, r.height, null);
         for (int i = 0; i < 3; i++) if (i != pos) FontePixel.centro(g, POSICOES[i], r.x + i * w3 + w3 / 2, r.y + (r.height - 7) / 2, 1, foco == F_CHAVE ? OURO : CINZA);
-        int ch = r.height + 4, cw = CURSOR.getWidth() * ch / CURSOR.getHeight(), cx = r.x + pos * w3 + (w3 - cw) / 2;
-        g.drawImage(CURSOR, cx, r.y - 2, cw, ch, null);
-        FontePixel.centro(g, POSICOES[pos], r.x + pos * w3 + w3 / 2, r.y + (r.height - 7) / 2, 1, BRANCO);
+        int ch = r.height + 4, cw = CURSOR.getWidth() * ch / CURSOR.getHeight();
+        int centro = arrastandoChave ? Math.max(r.x + w3 / 2, Math.min(r.x + r.width - w3 / 2, chaveArrasteX)) : r.x + pos * w3 + w3 / 2;
+        g.drawImage(CURSOR, centro - cw / 2, r.y - 2, cw, ch, null);
+        FontePixel.centro(g, POSICOES[pos], centro, r.y + (r.height - 7) / 2, 1, BRANCO);
         if (foco == F_CHAVE) { g.setColor(OURO); g.drawRect(r.x - 3, r.y - 4, r.width + 5, r.height + 7); }
     }
 
@@ -332,7 +341,9 @@ final class TelaRadio {
         if (!aberta) return false;
         if (id == MouseEvent.MOUSE_MOVED || id == MouseEvent.MOUSE_DRAGGED || id == MouseEvent.MOUSE_PRESSED) {
             mouseEm = mexeuEm = System.currentTimeMillis();     // com mouse, a mao do piloto e o cursor
-            alvoMaoX = x; alvoMaoY = y;
+            // a mao segue o mouse so dentro da area dos controles (knobs, chave e teclas): nao sobe no dial nem sai do radio
+            alvoMaoX = Math.max(VOL_X - KR, Math.min(SIN_X + KR, x));
+            alvoMaoY = Math.max(Math.min(KNOB_Y - KR, ay(674)) - 12, Math.min(600, y));
         }
         int knob = dentro(x, y, VOL_X, KNOB_Y) ? F_VOLUME : dentro(x, y, SIN_X, KNOB_Y) ? F_SINTONIA : -1;
         if (id == MouseEvent.MOUSE_WHEEL && knob >= 0) { foco = knob; if (knob == F_VOLUME) girarVolume(-rodinha); else sintonizar(sintoniaAtual() - rodinha); return true; }
@@ -340,9 +351,11 @@ final class TelaRadio {
             if (knob >= 0) { foco = knob; arrastando = knob; arrasteAngulo = angulo(x, y, knob); arrasteAcumulado = 0; return true; }
             for (int i = 0; i < 6; i++) if (PRESETS[i].contains(x, y)) { foco = F_PRESET + i; preset(i); return true; }
             for (int i = 0; i < 3; i++) if (FUNCOES[i].contains(x, y)) { foco = F_FUNCAO + i; funcao(i); return true; }
-            if (CHAVE.contains(x, y)) { foco = F_CHAVE; chave(Math.min(2, (x - CHAVE.x) * 3 / CHAVE.width)); return true; }
+            if (CHAVE.contains(x, y)) { foco = F_CHAVE; arrastando = F_CHAVE; chaveArrasteX = x; return true; }
             return false;
         }
+        if (id == MouseEvent.MOUSE_DRAGGED && arrastando == F_CHAVE) { chaveArrasteX = x; return true; }   // desliza o cursor
+        if (id == MouseEvent.MOUSE_RELEASED && arrastando == F_CHAVE) { arrastando = -1; chave(posicaoChave(chaveArrasteX)); return true; }
         if (id == MouseEvent.MOUSE_DRAGGED && arrastando >= 0) {   // girar o botao arrastando em volta dele
             double a = angulo(x, y, arrastando), d = Math.atan2(Math.sin(a - arrasteAngulo), Math.cos(a - arrasteAngulo));
             arrasteAngulo = a; arrasteAcumulado += d;
@@ -512,6 +525,15 @@ final class TelaRadio {
             int c = b.getWidth() / 5;
             java.awt.image.BufferedImage[] q = new java.awt.image.BufferedImage[5];
             for (int i = 0; i < 5; i++) q[i] = b.getSubimage(i * c, 0, c, b.getHeight());
+            // na arte, os quadros de segurar (2 a 4) vieram como mao esquerda (polegar a direita):
+            // espelha para continuar sendo a mesma mao direita dos quadros de apontar
+            for (int i = 2; i < 5; i++) {
+                java.awt.image.BufferedImage e = new java.awt.image.BufferedImage(c, q[i].getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                Graphics2D d = e.createGraphics();
+                d.drawImage(q[i], c, 0, -c, q[i].getHeight(), null);
+                d.dispose();
+                q[i] = e;
+            }
             return q;
         } catch (java.io.IOException e) { return null; }
     }

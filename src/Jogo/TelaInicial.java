@@ -41,8 +41,6 @@ extends JPanel {
     private static final Rectangle[] AREAS_MENU = new Rectangle[]{new Rectangle(621, 284, 307, 47), new Rectangle(622, 334, 306, 46), new Rectangle(622, 382, 306, 46), new Rectangle(622, 430, 306, 46), new Rectangle(622, 479, 306, 46), new Rectangle(622, 526, 306, 46)};
     private static final Rectangle[] AREAS_HANGAR = new Rectangle[]{new Rectangle(18, 126, 180, 386), new Rectangle(204, 126, 180, 386), new Rectangle(390, 126, 180, 386), new Rectangle(576, 126, 180, 386), new Rectangle(762, 126, 180, 386)};
     private static final String[] REQUISITOS = new String[]{"NAVE INICIAL", "1 INSIGNIA", "3 INSIGNIAS", "5 INSIGNIAS", "ZERAR A CAMPANHA"};
-    /** Fundo dos botoes do menu na arte (para cobrir o rotulo antigo). */
-    private static final Color COR_BOTAO = new Color(10, 22, 38);
     private static final String[] NOMES_NAVES = new String[]{"RAPTOR MK-I", "SHADOW", "VALKYRIE", "BERSERKER", "METAL GOD"};
     private Pagina pagina = Pagina.INICIO;
     private final Timer animador;
@@ -310,9 +308,6 @@ extends JPanel {
                 if (this.animado == null) this.animado = novoAnimado();
                 this.animado.desenhar(graphics2D);
                 this.desenharLuzesInicio(graphics2D);
-                Rectangle rk = AREAS_MENU[4]; // a arte diz CREDITOS: cobre e escreve RANKING
-                graphics2D.setColor(COR_BOTAO); graphics2D.fillRect(rk.x + 14, rk.y + 9, rk.width - 28, rk.height - 18);
-                FontePixel.centro(graphics2D, "RANKING", rk.x + rk.width / 2, rk.y + rk.height / 2 - 10, 3, new Color(232, 238, 248));
                 Rectangle rectangle = AREAS_MENU[this.opcao];
                 graphics2D.setColor(new Color(174, 35, 7, (int)(65.0 + 45.0 * (1.0 + Math.sin(this.tempoHangar * 3.0)) / 2.0)));
                 graphics2D.fillRoundRect(rectangle.x + 4, rectangle.y + 4, rectangle.width - 8, rectangle.height - 8, 9, 9);
@@ -369,7 +364,7 @@ extends JPanel {
             case CREDITOS: {
                 graphics2D.drawImage(this.arteInicioNeutro, 0, 0, 960, 600, null);
                 Placar.desenhar(graphics2D, placar.ler(), "ESC: VOLTAR");
-                FontePixel.centro(graphics2D, "RÁDIO: FFMPEG (LGPL 3) - VEJA LICENCAS.TXT", 480, 562, 1, new Color(110, 120, 140));
+                FontePixel.centro(graphics2D, "RÁDIO: FFMPEG (LGPL 3) - VEJA LICENCAS.TXT", 480, 568, 1, new Color(110, 120, 140));
                 break;
             }
             case INFORMACOES: {

@@ -56,6 +56,20 @@ public final class TesteTelaRadio {
         ok(RadioMetal.modo() == RadioMetal.Modo.PLAYLIST, "chave: de RADIO para PLAYLIST");
         PainelSom.tecla(KeyEvent.VK_UP);
         ok(RadioMetal.modo() == RadioMetal.Modo.TRILHA, "chave: de PLAYLIST para TRILHA");
+        // mouse: clicar e arrastar o cursor da chave; so troca ao soltar, na posicao mais perto
+        int chx = TelaRadio.pontoTeste(TelaRadio.F_CHAVE).x, chy = TelaRadio.pontoTeste(TelaRadio.F_CHAVE).y;
+        TelaRadio.mouse(java.awt.event.MouseEvent.MOUSE_PRESSED, chx, chy, 0);
+        TelaRadio.mouse(java.awt.event.MouseEvent.MOUSE_DRAGGED, chx + 400, chy + 30, 0);
+        ok(RadioMetal.modo() == RadioMetal.Modo.TRILHA, "chave: arrastando ainda nao troca");
+        TelaRadio.mouse(java.awt.event.MouseEvent.MOUSE_RELEASED, chx + 400, chy + 30, 0);
+        ok(RadioMetal.modo() == RadioMetal.Modo.PLAYLIST, "chave: arrastar para a direita e soltar vai para PLAYLIST");
+        TelaRadio.mouse(java.awt.event.MouseEvent.MOUSE_PRESSED, chx, chy, 0);
+        TelaRadio.mouse(java.awt.event.MouseEvent.MOUSE_DRAGGED, chx - 400, chy, 0);
+        TelaRadio.mouse(java.awt.event.MouseEvent.MOUSE_RELEASED, chx - 400, chy, 0);
+        ok(RadioMetal.modo() == RadioMetal.Modo.TRILHA, "chave: arrastar para a esquerda e soltar volta para TRILHA");
+        TelaRadio.mouse(java.awt.event.MouseEvent.MOUSE_PRESSED, chx, chy, 0);
+        TelaRadio.mouse(java.awt.event.MouseEvent.MOUSE_RELEASED, chx, chy, 0);
+        ok(RadioMetal.modo() == RadioMetal.Modo.RADIO, "chave: clique simples no meio vai para RADIO");
         // mouse: clique no botao 3 e rodinha no VOLUME
         ok(TelaRadio.mouse(java.awt.event.MouseEvent.MOUSE_PRESSED, TelaRadio.pontoTeste(TelaRadio.F_PRESET + 2).x, TelaRadio.pontoTeste(TelaRadio.F_PRESET + 2).y, 0), "clique no botao 3");
         ok(RadioMetal.estacaoAtual() == 2 && RadioMetal.modo() == RadioMetal.Modo.RADIO, "clique liga a estacao 3");

@@ -25,45 +25,57 @@ final class Placar {
   try{for(int i=0;i<Math.min(10,l.size());i++){Entrada e=l.get(i);dados.put("r"+i,e.iniciais+";"+e.pontos+";"+e.modo);}dados.flush();return true;}
   catch(SecurityException|BackingStoreException ex){return false;}
  }
- /** Ranking das lendas (tela RANKING e tecla H): o 1o lugar em destaque dourado, brilhando, com trofeu;
-  *  2o e 3o com trofeu de prata e bronze; tudo em fonte pixel. O trofeu e provisorio (desenhado no codigo). */
+ /** Ranking das lendas (tela RANKING e tecla H), no estilo dos botoes do menu: paineis azul-escuros com
+  *  borda azul chanfrada e letras claras. O 1o lugar fica em destaque dourado, brilhando, com trofeu;
+  *  2o e 3o com trofeu de prata e bronze. O trofeu e provisorio (desenhado no codigo). */
+ static final Color FUNDO=new Color(3,11,23),BORDA=new Color(58,118,170),BORDA_ESCURA=new Color(26,50,80),LETRA=new Color(226,238,248),ROTULO=new Color(120,160,200);
  static void desenhar(Graphics2D tela,List<Entrada> lista,String rodape){
   Graphics2D g=(Graphics2D)tela.create();
   long agora=System.currentTimeMillis();double pulso=.5+.5*Math.sin(agora/260.0);
-  Color ouro=new Color(255,204,64),ouroClaro=new Color(255,236,150),prata=new Color(200,210,226),bronze=new Color(214,128,64),texto=new Color(226,232,244),cinza=new Color(140,150,172);
+  Color ouro=new Color(255,204,64),ouroClaro=new Color(255,236,150),prata=new Color(200,210,226),bronze=new Color(214,128,64);
   g.setColor(new Color(0,0,0,170));g.fillRect(0,0,960,600);
-  g.setColor(new Color(4,7,18,245));g.fillRect(120,24,720,552);
-  g.setColor(new Color(150,110,30));g.fillRect(120,24,720,4);g.fillRect(120,572,720,4);g.fillRect(120,24,4,552);g.fillRect(836,24,4,552);
-  FontePixel.centro(g,"RANKING DAS LENDAS",480,44,4,ouro);
-  if(lista.isEmpty()){FontePixel.centro(g,"NINGUÉM AINDA. SEJA O PRIMEIRO!",480,280,3,texto);}
+  painel(g,120,20,720,560,16,FUNDO,BORDA,3);
+  FontePixel.centro(g,"RANKING",480,40,4,LETRA);
+  g.setColor(BORDA_ESCURA);g.fillRect(300,80,360,2);
+  if(lista.isEmpty()){FontePixel.centro(g,"NINGUÉM AINDA. SEJA O PRIMEIRO!",480,280,3,LETRA);}
   else{
-   // 1o lugar: caixa dourada com brilho pulsando e um reflexo passando
-   Entrada p=lista.get(0);int bx=160,by=104,bw=640,bh=128;
-   for(int k=3;k>=1;k--){g.setColor(new Color(255,190,40,(int)((18+22*pulso)*(4-k)/3)));g.fillRect(bx-k*6,by-k*6,bw+k*12,bh+k*12);}
-   g.setColor(new Color(40,28,6));g.fillRect(bx,by,bw,bh);
-   g.setColor(ouro);g.fillRect(bx,by,bw,4);g.fillRect(bx,by+bh-4,bw,4);g.fillRect(bx,by,4,bh);g.fillRect(bx+bw-4,by,4,bh);
-   Graphics2D r=(Graphics2D)g.create();r.clipRect(bx+4,by+4,bw-8,bh-8);int rx=bx-120+(int)((agora/6)%(bw+240));
-   r.setColor(new Color(255,245,200,55));r.fillRect(rx,by,10,bh);r.fillRect(rx+16,by,4,bh);r.dispose();
-   trofeu(g,bx+20,by+24,8,ouro,ouroClaro);
+   // 1o lugar: painel com borda dourada pulsando e um reflexo passando
+   Entrada p=lista.get(0);int bx=160,by=98,bw=640,bh=128;
+   for(int k=3;k>=1;k--)painel(g,bx-k*5,by-k*5,bw+k*10,bh+k*10,14+k*5,new Color(255,190,40,(int)((14+20*pulso)*(4-k)/3)),null,0);
+   painel(g,bx,by,bw,bh,14,FUNDO,ouro,3);
+   Graphics2D r=(Graphics2D)g.create();r.clip(chanfro(bx+3,by+3,bw-6,bh-6,12));int rx=bx-120+(int)((agora/6)%(bw+240));
+   r.setColor(new Color(255,245,200,40));r.fillRect(rx,by,10,bh);r.fillRect(rx+16,by,4,bh);r.dispose();
+   trofeu(g,bx+24,by+24,8,ouro,ouroClaro);
    FontePixel.desenhar(g,"CAMPEÃO",bx+130,by+18,2,ouroClaro);
    FontePixel.desenhar(g,"1",bx+130,by+48,7,ouro);
    FontePixel.desenhar(g,p.iniciais,bx+190,by+48,7,ouroClaro);
-   String pts=String.format(Locale.ROOT,"%,d",p.pontos).replace(',','.');
-   FontePixel.desenhar(g,"PONTOS",bx+bw-24-FontePixel.largura("PONTOS",2),by+18,2,ouroClaro);
-   FontePixel.desenhar(g,pts,bx+bw-24-FontePixel.largura(pts,5),by+54,5,ouro);
-   // demais: posicao, piloto e pontuacao geral
-   FontePixel.desenhar(g,"POS",184,256,2,cinza);FontePixel.desenhar(g,"PILOTO",300,256,2,cinza);
-   FontePixel.desenhar(g,"PONTUAÇÃO GERAL",776-FontePixel.largura("PONTUAÇÃO GERAL",2),256,2,cinza);
-   for(int i=1;i<lista.size();i++){Entrada e=lista.get(i);int y=282+(i-1)*28;Color c=i==1?prata:i==2?bronze:texto;int es=i<=2?3:2;
-    if(i%2==1){g.setColor(new Color(255,255,255,12));g.fillRect(172,y-6,616,28);}
-    if(i<=2)trofeu(g,244,y-3,2,c,c.brighter());
-    FontePixel.desenhar(g,String.format(Locale.ROOT,"%02d",i+1),184,y,es,c);
-    FontePixel.desenhar(g,e.iniciais,300,y,es,c);
-    String s=String.format(Locale.ROOT,"%,d",e.pontos).replace(',','.');
-    FontePixel.desenhar(g,s,776-FontePixel.largura(s,es),y,es,c);}
+   String pts=pontos(p.pontos);
+   FontePixel.desenhar(g,"PONTOS",bx+bw-28-FontePixel.largura("PONTOS",2),by+18,2,ouroClaro);
+   FontePixel.desenhar(g,pts,bx+bw-28-FontePixel.largura(pts,5),by+54,5,ouro);
+   // demais: posicao, piloto e pontuacao geral, cada um num botao como os do menu
+   FontePixel.desenhar(g,"POS",184,246,2,ROTULO);FontePixel.desenhar(g,"PILOTO",300,246,2,ROTULO);
+   FontePixel.desenhar(g,"PONTUAÇÃO GERAL",776-FontePixel.largura("PONTUAÇÃO GERAL",2),246,2,ROTULO);
+   for(int i=1;i<lista.size();i++){Entrada e=lista.get(i);int y=268+(i-1)*31;Color c=i==1?prata:i==2?bronze:LETRA;
+    painel(g,168,y,624,27,8,FUNDO,i<=2?c.darker():BORDA,2);
+    int ty=y+(27-FontePixel.altura(2))/2;
+    if(i<=2)trofeu(g,244,y+4,2,c,c.brighter());
+    FontePixel.desenhar(g,String.format(Locale.ROOT,"%02d",i+1),184,ty,2,c);
+    FontePixel.desenhar(g,e.iniciais,300,ty,2,c);
+    String s=pontos(e.pontos);
+    FontePixel.desenhar(g,s,776-FontePixel.largura(s,2),ty,2,c);}
   }
-  FontePixel.centro(g,rodape,480,546,2,new Color(120,220,255));
+  FontePixel.centro(g,rodape,480,550,2,ROTULO);
   g.dispose();
+ }
+ private static String pontos(int p){return String.format(Locale.ROOT,"%,d",p).replace(',','.');}
+ /** Retangulo com os quatro cantos chanfrados, como os botoes do menu. */
+ static Polygon chanfro(int x,int y,int w,int h,int c){
+  return new Polygon(new int[]{x+c,x+w-c,x+w,x+w,x+w-c,x+c,x,x},new int[]{y,y,y+c,y+h-c,y+h,y+h,y+h-c,y+c},8);
+ }
+ /** Painel chanfrado: fundo e borda de 'e' px (borda null = so o fundo), com uma linha escura por fora. */
+ static void painel(Graphics2D g,int x,int y,int w,int h,int c,Color fundo,Color borda,int e){
+  if(borda!=null){g.setColor(new Color(0,2,8));g.fillPolygon(chanfro(x-1,y-1,w+2,h+2,c+1));g.setColor(borda);g.fillPolygon(chanfro(x,y,w,h,c));}
+  g.setColor(fundo);g.fillPolygon(borda==null?chanfro(x,y,w,h,c):chanfro(x+e,y+e,w-2*e,h-2*e,Math.max(1,c-e/2)));
  }
  /** Trofeu em pixel art (provisorio, ate a arte do GPT): taca com alcas, haste e base, em blocos de 'e' px. */
  static void trofeu(Graphics2D g,int x,int y,int e,Color cor,Color luz){
